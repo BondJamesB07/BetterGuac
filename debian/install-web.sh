@@ -48,3 +48,17 @@ install -m 644 README.md "$P/usr/share/doc/betterguac/README.md"
 install -m 644 files/NOTICE "$P/usr/share/doc/betterguac/NOTICE"
 install -m 644 "$B/guacamole-server-1.6.0/LICENSE" "$P/usr/share/doc/betterguac/LICENSE"
 install -m 644 files/README.Debian "$P/usr/share/doc/betterguac/README.Debian"
+
+# credits of the two upstream extensions: each release archive has its own
+# LICENSE, NOTICE and bundled/ (third-party licenses of the libraries inside
+# its jar). Kept in one folder per extension so nothing overwrites the main
+# LICENSE/NOTICE or the other extension's files.
+for x in guacamole-auth-jdbc guacamole-auth-totp; do
+    X=$W/$x-1.6.0; D=$P/usr/share/doc/betterguac/$x
+    test -d "$X/bundled"
+    install -d -m 755 "$D"
+    install -m 644 "$X/LICENSE" "$X/NOTICE" "$D/"
+    cp -R "$X/bundled" "$D/bundled"
+    find "$D/bundled" -type d -exec chmod 755 {} +
+    find "$D/bundled" -type f -exec chmod 644 {} +
+done

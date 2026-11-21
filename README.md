@@ -18,6 +18,7 @@ Your users open a browser, sign in with their email address and an authenticator
 - Day-to-day administration
 - Removing BetterGuac
 - Troubleshooting
+- Building the package from source
 - License and credits
 
 ## What you get
@@ -451,6 +452,53 @@ The `instance:` line does not match this machine. Use the value the installer wr
 **`can't read /etc/betterguac/sync.env (run it with sudo)`**
 Run the command with `sudo`.
 
+## Building the package from source
+
+The repository holds everything needed to build the `.deb` except three Apache Guacamole 1.6.0 release archives. They are large, unchanged upstream files, so `.gitignore` keeps them out of the repository. The build stops if any of them is missing from the `upstream/` folder.
+
+| File | What the build uses it for |
+|---|---|
+| `guacamole-server-1.6.0.tar.gz` | Source of guacd, patched and compiled |
+| `guacamole-auth-jdbc-1.6.0.tar.gz` | MySQL/MariaDB authentication extension and database schema |
+| `guacamole-auth-totp-1.6.0.tar.gz` | Two-factor (TOTP) extension |
+
+The fourth upstream file the build needs, `guacamole-1.6.0.war`, is already in `upstream/`.
+
+These steps were tested on Debian 13. The package is built for the architecture of the machine you build on, so build on amd64 for an amd64 package and on arm64 for an arm64 package.
+
+1. From the top folder of the repository, download the three archives into `upstream/` and check them against the SHA-256 checksums Apache publishes:
+
+   ```bash
+   cd upstream
+   base=https://archive.apache.org/dist/guacamole/1.6.0
+   curl -fLO "$base/source/guacamole-server-1.6.0.tar.gz"
+   curl -fLO "$base/binary/guacamole-auth-jdbc-1.6.0.tar.gz"
+   curl -fLO "$base/binary/guacamole-auth-totp-1.6.0.tar.gz"
+   sha256sum -c <<'EOF'
+   8bc45675da96d7b6f39728160181e3d4ff3c08f460f6d26de5805b642bf13f2b  guacamole-server-1.6.0.tar.gz
+   97bc5fd3d67d25c0e98a475d1dfd308a037859f549fac47171c723b7a7039366  guacamole-auth-jdbc-1.6.0.tar.gz
+   0202c197d3b4e59e69b4dde2a80906adf5f03a497748b74ad3d599022e26f347  guacamole-auth-totp-1.6.0.tar.gz
+   EOF
+   cd ..
+   ```
+
+   Each line must end in `OK`. The same files and `.sha256` checksum files are on Apache's download pages for [Guacamole 1.6.0](https://guacamole.apache.org/releases/1.6.0/).
+
+2. Install the build tools and the build dependencies listed in `debian/control`:
+
+   ```bash
+   sudo apt install dpkg-dev fakeroot
+   sudo apt build-dep ./
+   ```
+
+3. Build the package:
+
+   ```bash
+   dpkg-buildpackage -b -us -uc
+   ```
+
+   The package is written to the folder above the repository, for example `../betterguac_1.6.0+bg9_amd64.deb`. Install it as described in [Install](#install).
+
 ## License and credits
 
-BetterGuac is based on [Apache Guacamole](https://guacamole.apache.org/), used under the Apache License 2.0. The required license and notice files are included in the package. Apache Guacamole and Guacamole are trademarks of the Apache Software Foundation; BetterGuac is an independent project and is not endorsed by the Apache Software Foundation.
+BetterGuac is based on [Apache Guacamole](https://guacamole.apache.org/), used under the Apache License 2.0. The required license and notice files are included in the package, in `/usr/share/doc/betterguac/`. The MySQL authentication and two-factor extensions contain third-party libraries; their upstream LICENSE, NOTICE and per-library license files are kept in `/usr/share/doc/betterguac/guacamole-auth-jdbc/` and `/usr/share/doc/betterguac/guacamole-auth-totp/`. Apache Guacamole and Guacamole are trademarks of the Apache Software Foundation; BetterGuac is an independent project and is not endorsed by the Apache Software Foundation.
