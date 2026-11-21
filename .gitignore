@@ -18,3 +18,12 @@ debian/debhelper-build-stamp
 .env
 *.pyc
 __pycache__/
+# Credentials and per-install secrets (never commit)
+sync.env
+*.env
+initial-admin.txt
+*.key
+*.pem
+id_rsa*
+id_ed25519*
+.git-credentials
