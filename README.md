@@ -1,0 +1,456 @@
+# BetterGuac
+
+BetterGuac is a clientless remote access gateway for SSH, RDP, VNC and Telnet, built on Apache Guacamole 1.6.0. One package installs the whole stack on a single Linux machine: the connection daemon, the web application, a MariaDB database, two-factor sign-in, a modern interface, and a YAML tool that lets you manage servers and users as a file you can review, version and preview before anything changes.
+
+Your users open a browser, sign in with their email address and an authenticator code, and see only the servers you assigned to them. No VPN client, no browser plugin, no Java applet.
+
+> This README describes release 1.6.0+bg9.
+
+## Contents
+
+- What you get
+- Requirements
+- Install
+- First sign-in
+- Managing servers and users with YAML
+- SSH keys
+- Running behind a reverse proxy
+- Day-to-day administration
+- Removing BetterGuac
+- Troubleshooting
+- License and credits
+
+## What you get
+
+- **One install.** guacd, Tomcat 10, MariaDB, the two-factor extension and the BetterGuac interface are installed and wired together by the package. No JAR files to copy, no schema to load by hand.
+- **Two-factor sign-in built in.** Users enroll an authenticator app (it appears as "BetterGuac") the first time they sign in.
+- **Email sign-in.** Accounts use an email address as the sign-in name.
+- **Roles.** Administrators manage users, servers and assignments. Regular users manage their own profile and see only the servers assigned to them.
+- **YAML as a source of truth.** Describe servers and users in one file, preview the exact changes, then apply them by plan ID.
+- **SSH keys by path.** Private keys stay as files on the gateway. They are never pasted into a browser or stored as key text in the database.
+- **RDP fix included.** guacd ships with a FreeRDP 3 post-connect graphics fix.
+
+## Requirements
+
+| Item | Supported |
+|---|---|
+| Operating system | Debian 13, Ubuntu 26.04 |
+| Architecture | amd64 (x86-64), arm64 |
+| Privileges | root or sudo |
+| Network port | 8080/tcp (Tomcat) |
+
+The package depends on `mariadb-server` and `tomcat10` and pulls them in automatically.
+
+**Important:** BetterGuac stores its data in MariaDB. Installing it on a machine that already runs MySQL replaces MySQL with MariaDB. Use a dedicated machine or VM.
+
+## Install
+
+Download the package for your architecture, then install it with `apt` so dependencies are resolved:
+
+```bash
+# amd64
+sudo apt install ./betterguac_1.6.0+bg9_amd64.deb
+
+# arm64
+sudo apt install ./betterguac_1.6.0+bg9_arm64.deb
+```
+
+The `./` matters: without it, `apt` looks for a package in your repositories instead of the file.
+
+During installation you are asked two questions:
+
+1. **Email address for the first administrator.** Leave it empty to create an account named `admin`.
+2. **Password for the first administrator.** Leave it empty to have a long random password generated.
+
+These questions appear only when you install from an interactive terminal. When the package is installed from a script or automation, it creates `admin` with a generated password. To choose the values in automation, preseed them before installing:
+
+```bash
+echo "betterguac betterguac/admin-email string admin@example.com" | sudo debconf-set-selections
+sudo apt install -y ./betterguac_1.6.0+bg9_amd64.deb
+```
+
+When installation finishes, check that everything is running:
+
+```bash
+sudo betterguac-admin status
+```
+
+Three services make up BetterGuac: `betterguac-guacd`, `tomcat10` and `mariadb`. All three start at boot.
+
+## First sign-in
+
+Open `http://<server-address>:8080/betterguac/` in a browser. The bare address `http://<server-address>:8080/` and old `/guacamole/` bookmarks redirect there.
+
+If you let the installer generate the password, read it from:
+
+```bash
+sudo cat /etc/betterguac/initial-admin.txt
+```
+
+The file is readable by root only. Delete it once you have signed in and changed the password.
+
+### The setup administrator
+
+The first account is a **setup administrator**. It signs in with the package-generated password and is **not** asked to enroll an authenticator app: it is meant to create the real administrators, and is then disabled or kept as a fallback with a long password.
+
+1. Sign in as the first administrator with the generated password. No authenticator code is requested.
+2. Create your own named administrator account (Users, New user, tick the administer permission) and enroll your authenticator at its first sign-in.
+3. Disable the first administrator, or keep it as a break-glass account with a long random password.
+4. Delete `/etc/betterguac/initial-admin.txt`.
+
+This is the same idea as the first-run setup screen in tools like Portainer, with one difference: the setup screen is protected by a generated password instead of being open to whoever reaches it first. Accounts created afterwards, including a second administrator, are normal accounts and are asked to enroll an authenticator.
+
+### Locked out
+
+If an administrator loses its password or authenticator:
+
+```bash
+sudo betterguac-admin reset-password <username>
+```
+
+This prints a new password, re-enables the account if it was disabled, and clears its two-factor enrollment. The setup administrator also keeps its no-two-factor setting, so it still signs in with its password alone; other accounts enroll again at the next sign-in.
+
+## Managing servers and users with YAML
+
+You can manage everything in the web interface. For more than a handful of servers, the YAML sync is faster and safer: you describe the servers and users you want in a file, preview exactly what will change, and apply that preview.
+
+### How it works
+
+- **It only runs when you run it.** Nothing watches the file. Saving the file changes nothing until you apply a plan.
+- **Preview first.** `plan` reads the database and shows every change. It writes nothing.
+- **Apply exactly what you reviewed.** `apply` needs the plan ID that `plan` printed. If anything changed since the preview (the file or the database), it refuses and writes nothing.
+- **It only manages what it created.** Servers and users created in the web interface are left alone, unless you hand one to the sync with `adopt`.
+- **Web edits are respected.** If someone changes a managed field in the web interface, that edit is kept. If the YAML changed the same field too, the change is reported as a conflict and skipped.
+- **Protected accounts.** `guacadmin` and the administrator created at install can never be created, changed or deleted by the sync.
+- **Never touched:** two-factor secrets and enrollment, connection history, sharing profiles and user groups.
+- **Removing an entry deletes it.** If you remove a server or user that the sync created from the file, the next plan deletes it. Safety checks stop a plan that would delete everything, or more than half of what the sync manages.
+
+### The files
+
+| File | Purpose |
+|---|---|
+| `/etc/betterguac/betterguac.yaml` | Your servers and users. Created by the installer as a starter file. |
+| `/etc/betterguac/sync.env` | Secrets referenced by the YAML, plus the sync's database login. Root only. |
+| `/etc/betterguac/keys/` | SSH private keys, referenced by path. |
+| `/usr/share/betterguac/betterguac.yaml.example` | A complete example with every option. |
+
+All commands need root, so run them with `sudo`.
+
+### The four commands
+
+Every command takes the **YAML file** as its argument. Not `sync.env`: the sync finds that file on its own.
+
+```bash
+# 1. Validate the file (syntax, names, secrets, key paths). Does not touch the database.
+sudo betterguac-sync check /etc/betterguac/betterguac.yaml
+
+# 2. Preview the changes. Reads the database, writes nothing, prints a plan ID.
+sudo betterguac-sync plan /etc/betterguac/betterguac.yaml
+
+# 3. Apply exactly that plan. Copy the plan ID from step 2.
+sudo betterguac-sync apply /etc/betterguac/betterguac.yaml --confirm <plan-id>
+
+# 4. See what the sync manages.
+sudo betterguac-sync status
+```
+
+`--confirm` must be followed by the full plan ID. `--confirm` on its own is an error.
+
+### Worked example: one server, one user
+
+This example adds an SSH server called Web-01 and a user who can reach it.
+
+**Step 1: store the user's password in `sync.env`.** Passwords never go in the YAML file. Add a line with a name of your choice:
+
+```bash
+sudo nano /etc/betterguac/sync.env
+```
+
+```ini
+JANE_PASSWORD=Choose-A-Long-Initial-Password
+```
+
+Leave the existing lines in `sync.env` as they are; they hold the sync's database login.
+
+**Step 2: install the SSH key** for the server on the gateway:
+
+```bash
+sudo install -o root -g tomcat -m 640 ./web-01.key /etc/betterguac/keys/web-01
+```
+
+**Step 3: edit the YAML file.**
+
+```bash
+sudo nano /etc/betterguac/betterguac.yaml
+```
+
+The starter file contains `connections: []` and `users: []` with commented examples underneath. The `[]` means "empty list". **When you add entries, delete the `[]`**, otherwise the file is not valid YAML. Leave the `instance:` line exactly as the installer wrote it: it ties the file to this machine's database.
+
+The finished file looks like this:
+
+```yaml
+version: 1
+kind: guacamole-db-sync
+instance: betterguac            # keep the value the installer wrote
+
+connections:
+  - key: web-01                 # stable ID used by the sync; lowercase, never shown to users
+    name: Web-01                # what users see
+    group: Lab                  # optional folder
+    protocol: ssh
+    params:
+      hostname: 192.0.2.10
+      port: 22
+      username: admin
+      private-key-file: /etc/betterguac/keys/web-01
+
+users:
+  - username: jane@example.com
+    email: jane@example.com
+    full_name: Jane Example
+    password: {env: JANE_PASSWORD}   # the name from sync.env
+    password_mode: initial           # set once; Jane can change it later
+    connections: [web-01]            # connection keys from above
+```
+
+**Step 4: check.**
+
+```console
+$ sudo betterguac-sync check /etc/betterguac/betterguac.yaml
+OK: 1 connections, 1 users (instance betterguac)
+  connection web-01: params hostname, port, private-key, private-key-file, username
+```
+
+**Step 5: plan.** The output looks like this (your plan ID will differ):
+
+```console
+$ sudo betterguac-sync plan /etc/betterguac/betterguac.yaml
+Plan 7b0bd20ec94718fec5632e618d8485761f13e3d71cc6d457946d6e9bdd044d7a
+  2 to create, 0 to update, 0 to delete, 0 conflicts, 0 unchanged
+
++ CREATE connection web-01
+  ...
++ CREATE user jane@example.com
+  ...
+
+Nothing was written. To apply exactly this plan:
+  betterguac-sync apply FILE --confirm 7b0bd20ec94718fec5632e618d8485761f13e3d71cc6d457946d6e9bdd044d7a
+```
+
+Passwords are never printed. The plan shows `(secret from env JANE_PASSWORD)` instead.
+
+**Step 6: apply.** Replace `FILE` with the path of your YAML file and paste the plan ID:
+
+```bash
+sudo betterguac-sync apply /etc/betterguac/betterguac.yaml \
+  --confirm 7b0bd20ec94718fec5632e618d8485761f13e3d71cc6d457946d6e9bdd044d7a
+```
+
+```console
+Applied plan 7b0bd20e...: 2 created, 0 updated, 0 deleted, 0 conflicts skipped.
+```
+
+Jane can now sign in with her email and the initial password, and enrolls her authenticator at first sign-in.
+
+### Field reference
+
+**Top level** (all required except the lists, which may be empty):
+
+| Field | Meaning |
+|---|---|
+| `version` | Always `1` |
+| `kind` | Always `guacamole-db-sync` |
+| `instance` | Short name tied to this machine's database. Keep the installer's value. |
+| `connections` | List of servers |
+| `users` | List of users |
+
+**Connection fields:**
+
+| Field | Required | Meaning |
+|---|---|---|
+| `key` | yes | Stable ID: lowercase letters, digits, `.` `_` `-` |
+| `name` | yes | Display name, 1 to 128 characters |
+| `protocol` | yes | `ssh`, `rdp`, `vnc`, `telnet` or `kubernetes` |
+| `params` | no | Connection parameters, with Guacamole's parameter names (`hostname`, `port`, `username`, `password`, `security`, `ignore-cert`, `private-key-file`...) |
+| `group` | no | Folder the connection appears in |
+| `max_connections` | no | Limit on simultaneous sessions |
+| `max_connections_per_user` | no | Limit per user |
+
+**User fields:**
+
+| Field | Required | Meaning |
+|---|---|---|
+| `username` | yes | Sign-in name, usually an email address |
+| `password` | yes | `{env: NAME}` or `{file: /path}`, never plain text |
+| `password_mode` | no | `initial` (default): set once, later changes by the user are kept. `managed`: the YAML value is enforced. |
+| `email`, `full_name`, `organization`, `role`, `timezone` | no | Profile details |
+| `connections` | no | List of connection keys this user may open |
+| `admin` | no | `true` makes the user an administrator |
+| `system_permissions` | no | Finer-grained alternative to `admin` (do not use both) |
+| `disabled`, `expired` | no | `true` or `false` |
+| `valid_from`, `valid_until` | no | Dates as `YYYY-MM-DD` |
+| `access_window_start`, `access_window_end` | no | Times as `HH:MM` |
+
+Secrets for connections work the same way, for example an RDP password:
+
+```yaml
+  - key: desktop-01
+    name: Desktop-01
+    protocol: rdp
+    params:
+      hostname: 192.0.2.20
+      port: 3389
+      username: user
+      password: {env: DESKTOP01_PASSWORD}
+      security: nla
+      ignore-cert: true
+```
+
+### Bringing an existing object under YAML control
+
+To let the sync manage a server or user you created in the web interface, add it to the YAML file with the same name, then:
+
+```bash
+# Preview
+sudo betterguac-sync adopt /etc/betterguac/betterguac.yaml connection:web-01
+# Do it
+sudo betterguac-sync adopt /etc/betterguac/betterguac.yaml connection:web-01 --confirm
+```
+
+Use `user:<username>` for a user. From then on, `plan` shows any differences between the YAML and the database as updates.
+
+### Options for plan and apply
+
+| Option | Effect |
+|---|---|
+| `-v`, `--verbose` | Show more detail in the plan |
+| `--json` | Machine-readable plan |
+| `--strict` | Treat any conflict as an error |
+| `--overwrite kind:key` | Let the YAML replace a web-interface edit on one object, for example `--overwrite connection:web-01` |
+| `--allow-empty` | Allow a file with no entries to delete everything the sync manages |
+| `--allow-mass-delete` | Allow a plan that deletes more than half of the managed objects |
+
+**For scripts:** `plan` exits with code `0` when there is nothing to do, `2` when there are changes to apply, and `3` with `--strict` when there are conflicts. Code `2` is not an error.
+
+## SSH keys
+
+SSH private keys are files on the BetterGuac server, never text in the database or the browser.
+
+```bash
+sudo install -o root -g tomcat -m 640 ./mykey /etc/betterguac/keys/web-01
+```
+
+Then use `/etc/betterguac/keys/web-01` as the key file, in the web interface or as `private-key-file` in YAML. Rules:
+
+- The key must live in `/etc/betterguac/keys/`.
+- Use the full path. `~` and relative paths are not supported.
+- Key files only work for `ssh` connections.
+
+## Running behind a reverse proxy
+
+BetterGuac serves its application at `/betterguac/` on port 8080. Point your proxy at that path and forward it unchanged.
+
+Generic rule (any proxy):
+
+- Public URL: `https://remote.example.com/betterguac/`
+- Backend: `http://<server-address>:8080/betterguac/`
+- Enable WebSocket upgrades. Remote sessions use them.
+- Do not add, strip or rewrite path prefixes.
+
+Example for nginx:
+
+```nginx
+location /betterguac/ {
+    proxy_pass http://192.0.2.5:8080/betterguac/;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_buffering off;
+}
+```
+
+### Migrating from Apache Guacamole: remove old /guacamole rules
+
+BetterGuac redirects old `/guacamole/...` addresses and the bare server address to the same path under `/betterguac/`, so existing bookmarks keep working. If your proxy still carries rules from a stock Guacamole setup that add or rewrite a `/guacamole` prefix (for example Traefik `addPrefix` or `replacePathRegex` middleware, or an nginx `proxy_pass` ending in `/guacamole/`), every request is sent back into that redirect, and each round trip adds another segment:
+
+```text
+/betterguac/
+/betterguac/betterguac/
+/betterguac/betterguac/betterguac/ ...
+```
+
+**Fix:** remove the old prefix middleware or rewrite and route straight to `/betterguac/` as shown above.
+
+## Day-to-day administration
+
+| Task | Command |
+|---|---|
+| Status of all services | `sudo betterguac-admin status` |
+| Reset a password (also resets two-factor) | `sudo betterguac-admin reset-password <username>` |
+| guacd logs | `journalctl -u betterguac-guacd` |
+| Web application logs | `journalctl -u tomcat10` and `/var/log/tomcat10/` |
+
+**Where things live:**
+
+| Path | Contents |
+|---|---|
+| `/etc/betterguac/guacamole.properties` | Web application settings and database login |
+| `/etc/betterguac/guacd.conf` | guacd settings |
+| `/etc/betterguac/keys/` | SSH private keys |
+| `/etc/betterguac/betterguac.yaml` | YAML servers and users |
+| `/etc/betterguac/sync.env` | Secrets and the sync's database login (root only) |
+| `/usr/share/betterguac/` | Web application, extensions, schema, examples |
+| `/usr/lib/betterguac/guacd/` | guacd and its protocol plugins |
+
+## Removing BetterGuac
+
+```bash
+# Remove the program, keep settings, keys and the database for a later reinstall
+sudo apt remove betterguac
+
+# Remove everything, including /etc/betterguac (keys included) and the databases
+sudo apt purge betterguac
+```
+
+Before a purge deletes the databases, a copy is saved to `/var/backups/betterguac-purge-<date>.sql.gz`. Tomcat, MariaDB and Java stay installed; remove them with `sudo apt autoremove` if nothing else needs them.
+
+## Troubleshooting
+
+**`error: the following arguments are required: file`**
+The command needs the YAML file path: `sudo betterguac-sync check /etc/betterguac/betterguac.yaml`.
+
+**`... is not valid YAML: while parsing a block mapping ... expected <block end>, but found '<block sequence start>'`**
+You added entries under `connections: []` or `users: []` without deleting the `[]`. Change the line to `connections:` or `users:`.
+
+**Passing `sync.env` to `apply`**
+`apply` takes the YAML file, not `sync.env`. The sync reads `sync.env` automatically.
+
+**`argument --confirm: expected one argument`**
+Paste the plan ID after `--confirm`. Run `plan` again to see it.
+
+**`the plan changed since you reviewed it ... Nothing was written; run plan again.`**
+The YAML or the database changed after your preview. Run `plan` again, review it, and apply the new ID.
+
+**`write the password as {env: NAME} or {file: PATH}, not inline`**
+Move the password to `sync.env` as `NAME=...` and reference it with `{env: NAME}`.
+
+**`environment variable NAME is not set`**
+The name in `{env: NAME}` has no matching line in `sync.env`. Names must match exactly.
+
+**`that is the key itself. Save it as a file ...`**
+You pasted key text. Save the key in `/etc/betterguac/keys/` and give its path.
+
+**`... is protected ... YAML may not manage it`**
+`guacadmin` and the administrator created at install cannot be managed by YAML. Manage them in the web interface.
+
+**`this YAML is for instance ... but the database is ...`**
+The `instance:` line does not match this machine. Use the value the installer wrote.
+
+**`can't read /etc/betterguac/sync.env (run it with sudo)`**
+Run the command with `sudo`.
+
+## License and credits
+
+BetterGuac is based on [Apache Guacamole](https://guacamole.apache.org/), used under the Apache License 2.0. The required license and notice files are included in the package. Apache Guacamole and Guacamole are trademarks of the Apache Software Foundation; BetterGuac is an independent project and is not endorsed by the Apache Software Foundation.

@@ -1,0 +1,33 @@
+<meta name="after" content=".manage-user .bg-role-card">
+<div class="section bg-card bg-user-mfa-card" ng-controller="bgUserMfaController" ng-show="bgUm.visible">
+    <h2 class="header">Two-factor sign-in</h2>
+    <bg-help label="About resetting two-factor">
+        <ul>
+            <li>For a person who lost their phone or got a new one and can't sign in.</li>
+            <li>Reset removes their current authenticator and replaces their password with a one-time password, shown here once.</li>
+            <li>Give them the one-time password in person or by phone. At sign-in they choose a new password, then scan a new QR code and confirm it with a code.</li>
+            <li>Their old password stops working, so someone who only knows it can't set up the new code.</li>
+            <li>To reset your own, use My profile, which asks for your password and a current code.</li>
+        </ul>
+    </bg-help>
+    <p class="bg-um-status">
+        <span class="bg-badge" ng-class="bgUm.enrolled ? 'bg-badge-ok' : 'bg-badge-warn'">{{ bgUm.disabled ? 'Turned off' : (bgUm.enrolled ? 'Set up' : 'Not set up') }}</span>
+        <span ng-show="bgUm.disabled">Two-factor sign-in is turned off for this account, so it signs in with the password alone.</span>
+        <span ng-show="!bgUm.disabled && !bgUm.enrolled">They'll be asked to scan a QR code the next time they sign in.</span>
+    </p>
+    <div ng-show="bgUm.enrolled">
+        <button type="button" class="danger bg-um-reset" ng-hide="bgUm.confirm" ng-click="bgUm.confirm = true">Reset two-factor sign-in</button>
+        <div class="bg-um-confirm" ng-show="bgUm.confirm">
+            <p>Reset two-factor sign-in for <strong>{{ bgUm.username }}</strong>? Their current authenticator and their password both stop working, and you get a one-time password to give them.</p>
+            <button type="button" class="danger bg-um-confirm-yes" ng-disabled="bgUm.busy" ng-click="bgUmReset()">{{ bgUm.busy ? 'Resetting...' : 'Reset' }}</button>
+            <button type="button" class="cancel" ng-click="bgUm.confirm = false">Cancel</button>
+        </div>
+    </div>
+    <p class="bg-um-result" ng-show="bgUm.result" ng-class="{'bg-error': bgUm.failed}">{{ bgUm.result }}</p>
+    <div class="bg-um-temp" ng-show="bgUm.temporary">
+        <p>One-time password for <strong>{{ bgUm.username }}</strong> (shown only now):</p>
+        <code class="bg-um-temp-value">{{ bgUm.temporary }}</code>
+        <p class="bg-note">Give it to them in person or by phone, not by email. At sign-in they choose a new password, then scan the new QR code.</p>
+        <button type="button" class="cancel" ng-click="bgUm.temporary = null">Done, hide it</button>
+    </div>
+</div>

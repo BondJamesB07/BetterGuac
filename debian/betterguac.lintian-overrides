@@ -1,0 +1,7 @@
+# The Apache Guacamole 1.6.0 web application ships these inside its war;
+# the web app loads its own copies, so they stay as upstream built them.
+betterguac: embedded-javascript-library please use libjs-jquery [usr/share/betterguac/webapp/jquery.min.js]
+betterguac: embedded-javascript-library please use libjs-lodash [usr/share/betterguac/webapp/lodash.min.js]
+betterguac: codeless-jar [usr/share/betterguac/webapp/WEB-INF/lib/listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar]
+# guacd also starts with betterguac.target (start/stop everything at once)
+betterguac: systemd-service-file-refers-to-unusual-wantedby-target betterguac.target [usr/lib/systemd/system/betterguac-guacd.service]

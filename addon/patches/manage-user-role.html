@@ -1,0 +1,43 @@
+<meta name="before" content=".manage-user system-permission-editor">
+<div class="section bg-card bg-role-card" ng-controller="bgUserRoleController"
+     ng-show="managementPermissions[dataSource].canChangePermissions">
+
+    <h2 class="header">{{ 'BETTERGUAC.SECTION_HEADER_ROLE' | translate }}</h2>
+    <bg-help label="About roles">
+        <ul>
+            <li><strong>Admin</strong>: user management and server management. Can open every server.</li>
+            <li><strong>User</strong>: their own profile and preferences, and only the servers you assign to them below. Nothing else.</li>
+            <li>You can't change your own role, so you can't lock yourself out.</li>
+            <li>"Show detailed permissions" opens Guacamole's original checkboxes. Choosing a role again replaces anything set there.</li>
+        </ul>
+    </bg-help>
+
+    <div class="bg-role-choice" role="radiogroup">
+        <label class="bg-role-option" ng-class="{selected: bgRoleModel.value === 'admin', locked: bgIsSelf()}">
+            <input type="radio" name="bg-role" value="admin" ng-model="bgRoleModel.value"
+                   ng-change="bgSetRole('admin')" ng-disabled="bgIsSelf()">
+            <span class="bg-role-title">{{ 'BETTERGUAC.ROLE_ADMIN' | translate }}</span>
+            <span class="bg-role-help">{{ 'BETTERGUAC.HELP_ROLE_ADMIN' | translate }}</span>
+        </label>
+        <label class="bg-role-option" ng-class="{selected: bgRoleModel.value === 'user', locked: bgIsSelf()}">
+            <input type="radio" name="bg-role" value="user" ng-model="bgRoleModel.value"
+                   ng-change="bgSetRole('user')" ng-disabled="bgIsSelf()">
+            <span class="bg-role-title">{{ 'BETTERGUAC.ROLE_USER' | translate }}</span>
+            <span class="bg-role-help">{{ 'BETTERGUAC.HELP_ROLE_USER' | translate }}</span>
+        </label>
+    </div>
+
+    <p class="bg-note" ng-show="bgRoleModel.value === 'custom'">{{ 'BETTERGUAC.HELP_ROLE_CUSTOM' | translate }}</p>
+    <p class="bg-note" ng-show="bgIsSelf()">{{ 'BETTERGUAC.HELP_ROLE_SELF' | translate }}</p>
+
+    <label class="bg-check">
+        <input type="checkbox" ng-model="bgOwnPassword.value" ng-change="bgOwnPasswordChanged()"
+               ng-disabled="bgRoleModel.value === 'admin'">
+        <span>{{ 'BETTERGUAC.FIELD_OWN_PROFILE' | translate }}</span>
+    </label>
+
+    <button type="button" class="bg-link-button" ng-click="bgToggleAdvanced()">
+        {{ (bgAdvanced ? 'BETTERGUAC.ACTION_HIDE_DETAILED' : 'BETTERGUAC.ACTION_SHOW_DETAILED') | translate }}
+    </button>
+
+</div>

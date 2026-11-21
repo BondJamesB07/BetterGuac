@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- BetterGuac, managed by the betterguac package: sends this address to
+     /betterguac/. Removed when the package is removed. -->
+<Context docBase="/usr/share/betterguac/redirect" />

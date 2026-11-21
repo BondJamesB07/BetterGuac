@@ -1,0 +1,5 @@
+<meta name="before" content=".manage-user > div > .attributes">
+<div class="section bg-admin-avatar" ng-show="managementPermissions[dataSource].canChangeAttributes && user.attributes['bg-avatar']">
+    <span class="bg-avatar bg-avatar-lg"><img ng-src="{{ user.attributes['bg-avatar'] }}" alt=""></span>
+    <button type="button" class="bg-link-button" ng-click="user.attributes['bg-avatar'] = null">{{ 'BETTERGUAC.ACTION_REMOVE_PICTURE' | translate }}</button>
+</div>

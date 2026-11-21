@@ -1,0 +1,19 @@
+<meta name="before" content=".home-view .header:has(#section-header-all-connections)">
+<div class="bg-greeting" ng-controller="bgGreetingController">
+    <div class="bg-avatar bg-avatar-lg" ng-class="{'bg-avatar-skeleton': !bgSelf()}">
+        <img ng-if="bgSelf() && bgAvatar()" ng-src="{{ bgAvatar() }}" alt="">
+        <span ng-if="bgSelf() && !bgAvatar()">{{ bgInitial() }}</span>
+        <span ng-if="!bgSelf()" aria-hidden="true"></span>
+    </div>
+    <div class="bg-greeting-text">
+        <div class="bg-skeleton" ng-if="!bgSelf()" aria-hidden="true">
+            <span class="bg-skeleton-line bg-skeleton-name"></span>
+            <span class="bg-skeleton-line bg-skeleton-sub"></span>
+        </div>
+        <div class="bg-greeting-copy" ng-if="bgSelf()">
+            <h1 class="bg-hello" ng-if="bgFirstName()">{{ 'BETTERGUAC.TEXT_WELCOME_BACK' | translate:{ NAME : bgFirstName() } }}</h1>
+            <h1 class="bg-hello" ng-if="!bgFirstName()">{{ 'BETTERGUAC.TEXT_WELCOME_BACK_PLAIN' | translate }}</h1>
+            <p class="bg-greeting-sub">{{ 'BETTERGUAC.TEXT_HELLO_SUB' | translate }}</p>
+        </div>
+    </div>
+</div>

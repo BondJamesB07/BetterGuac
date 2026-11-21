@@ -1,0 +1,5 @@
+<meta name="before" content=".manage-user connection-permission-editor">
+<p class="bg-note bg-assign-note" ng-show="managementPermissions[dataSource].canChangePermissions">
+    <span ng-show="permissionFlags.systemPermissions.ADMINISTER">{{ 'BETTERGUAC.HELP_ASSIGN_ADMIN' | translate }}</span>
+    <span ng-hide="permissionFlags.systemPermissions.ADMINISTER">{{ 'BETTERGUAC.HELP_ASSIGN_USER' | translate }}</span>
+</p>

@@ -1,0 +1,117 @@
+BetterGuac: add a -c CONFIG_FILE option to guacd.
+
+Stock guacd 1.6.0 only reads the compiled-in GUACD_CONF_FILE
+(/etc/guacamole/guacd.conf). This lets the service file point it at
+/etc/betterguac/guacd.conf instead. Without -c nothing changes. With -c the
+file must exist and parse, or guacd refuses to start.
+
+--- a/src/guacd/conf-args.c
++++ b/src/guacd/conf-args.c
+@@ -35,7 +35,7 @@
+ 
+     /* Parse arguments */
+     int opt;
+-    while ((opt = getopt(argc, argv, "l:b:p:L:C:K:fv")) != -1) {
++    while ((opt = getopt(argc, argv, "c:l:b:p:L:C:K:fv")) != -1) {
+ 
+         /* -l: Bind port */
+         if (opt == 'l') {
+@@ -49,6 +49,10 @@
+             config->bind_host = guac_strdup(optarg);
+         }
+ 
++        /* -c: Config file (BetterGuac). Already read by main() before the
++         * other options, so the options given here still win. */
++        else if (opt == 'c') { }
++
+         /* -f: Run in foreground */
+         else if (opt == 'f') {
+             config->foreground = 1;
+@@ -105,6 +109,7 @@
+         else {
+ 
+             fprintf(stderr, "USAGE: %s"
++                    " [-c CONFIG_FILE]"
+                     " [-l LISTENPORT]"
+                     " [-b LISTENADDRESS]"
+                     " [-p PIDFILE]"
+--- a/src/guacd/conf-file.c
++++ b/src/guacd/conf-file.c
+@@ -172,6 +172,10 @@
+ }
+ 
+ guacd_config* guacd_conf_load() {
++    return guacd_conf_load_file(GUACD_CONF_FILE, 0);
++}
++
++guacd_config* guacd_conf_load_file(const char* path, int required) {
+ 
+     guacd_config* conf = guac_mem_alloc(sizeof(guacd_config));
+     if (conf == NULL)
+@@ -191,14 +195,14 @@
+ #endif
+ 
+     /* Read configuration from file */
+-    int fd = open(GUACD_CONF_FILE, O_RDONLY);
++    int fd = open(path, O_RDONLY);
+     if (fd > 0) {
+ 
+         int retval = guacd_conf_parse_file(conf, fd);
+         close(fd);
+ 
+         if (retval != 0) {
+-            fprintf(stderr, "Unable to parse \"" GUACD_CONF_FILE "\".\n");
++            fprintf(stderr, "Unable to parse \"%s\".\n", path);
+             guac_mem_free(conf);
+             return NULL;
+         }
+@@ -206,8 +210,8 @@
+     }
+ 
+     /* Notify of errors preventing reading */
+-    else if (errno != ENOENT) {
+-        fprintf(stderr, "Unable to open \"" GUACD_CONF_FILE "\": %s\n", strerror(errno));
++    else if (errno != ENOENT || required) {
++        fprintf(stderr, "Unable to open \"%s\": %s\n", path, strerror(errno));
+         guac_mem_free(conf);
+         return NULL;
+     }
+--- a/src/guacd/conf-file.h
++++ b/src/guacd/conf-file.h
+@@ -37,5 +37,13 @@
+  */
+ guacd_config* guacd_conf_load();
+ 
++/**
++ * BetterGuac: loads the configuration from the given file. If required is
++ * non-zero, a missing file is an error; otherwise a missing file means
++ * defaults. If reading or parsing fails, NULL is returned, and an error
++ * message is printed to stderr.
++ */
++guacd_config* guacd_conf_load_file(const char* path, int required);
++
+ #endif
+ 
+--- a/src/guacd/daemon.c
++++ b/src/guacd/daemon.c
+@@ -321,8 +321,18 @@
+     /* General */
+     int retval;
+ 
+-    /* Load configuration */
+-    guacd_config* config = guacd_conf_load();
++    /* Load configuration. BetterGuac: -c FILE picks the config file, which
++     * must then exist; without -c the compiled-in default is used as before.
++     * Options on the command line override the file either way. */
++    const char* conf_path = GUACD_CONF_FILE;
++    int conf_required = 0;
++    for (int i = 1; i < argc - 1; i++) {
++        if (strcmp(argv[i], "-c") == 0) {
++            conf_path = argv[i + 1];
++            conf_required = 1;
++        }
++    }
++    guacd_config* config = guacd_conf_load_file(conf_path, conf_required);
+     if (config == NULL || guacd_conf_parse_args(config, argc, argv))
+        exit(EXIT_FAILURE);
+ 

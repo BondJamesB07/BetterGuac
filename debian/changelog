@@ -1,0 +1,81 @@
+betterguac (1.6.0+bg9) trixie; urgency=medium
+
+  * First account is a setup administrator: it signs in with the generated
+    password and is not asked to enroll two-factor (TOTP attribute
+    guac-totp-disabled=true). Its default password is a long random one.
+  * YAML starter: the "delete []" note is on the connections and users lines.
+  * README for release 1.6.0+bg9 is installed as
+    /usr/share/doc/betterguac/README.md; README.Debian points to it.
+  * betterguac-sync --help lists plan and apply, and explains the default
+    /etc/betterguac/sync.env used by the betterguac-sync wrapper.
+
+ -- Robert Debs <robert@robertdebs.com>  Sat, 21 Nov 2026 18:00:00 +0000
+
+betterguac (1.6.0+bg8) trixie; urgency=medium
+
+  * One package for Debian 13 and Ubuntu 26.04: the JPEG library dependency
+    now reads "libjpeg62-turbo (>= 1.3.1) | libjpeg62", since both provide
+    libjpeg.so.62 with the LIBJPEG_6.2 symbols guacd uses (Debian names it
+    libjpeg62-turbo, Ubuntu libjpeg62).
+  * Depend on mariadb-server and mariadb-client directly instead of
+    default-mysql-server, which is MySQL 8.4 on Ubuntu and broke setup.
+    Installing BetterGuac on a machine that runs MySQL replaces it with
+    MariaDB.
+
+ -- Robert Debs <robert@robertdebs.com>  Sat, 21 Nov 2026 03:15:00 +0000
+
+betterguac (1.6.0+bg7) trixie; urgency=medium
+
+  * Home page loading state: the stock grey spinning cog is replaced by a
+    flat avocado silhouette with a steady double-beat pulse, centred on the
+    midnight-blue background and gone exactly when the server list is ready.
+  * The greeting row reserves its final size from first paint, so the server
+    list no longer jumps down when the profile arrives.
+  * The "BetterGuac is based on Apache Guacamole" credit is readable again:
+    quiet grey, 11px, bottom right of the sign-in and home pages, and a
+    separate thanks to Sesame for the AI tools used to build it. The Apache
+    wording, links, NOTICE and license files are unchanged.
+  * The avocado now shows from the very first paint: a small inline copy in
+    index.html covers the wait while the page's scripts download on a slow
+    link, then hands over to the home-page loader (or the sign-in page).
+  * Release build: version 1.6.0+bg7 (was the test build 1.6.0+bg7~load1).
+
+ -- Robert Debs <robert@robertdebs.com>  Fri, 20 Nov 2026 16:10:45 +0000
+
+betterguac (1.6.0+bg6) trixie; urgency=medium
+
+  * Refresh the BetterGuac UI add-on from the sandbox: the "based on Apache
+    Guacamole" credit is now a tiny one-line credit in the bottom-right
+    corner. Wording, links, NOTICE and license files are unchanged.
+  * The app.css/app.js cache stamp in index.html now also follows the UI
+    add-on's contents, so browsers pick up a changed add-on at once.
+
+ -- Robert Debs <robert@robertdebs.com>  Thu, 19 Nov 2026 07:55:00 -0600
+
+betterguac (1.6.0+bg5) trixie; urgency=medium
+
+  * Stop the leftover betterguac.target after the package is removed, so it
+    no longer shows as active after remove or purge. Tomcat keeps running.
+
+ -- Robert Debs <robert@robertdebs.com>  Thu, 19 Nov 2026 07:15:00 -0600
+
+betterguac (1.6.0+bg3) trixie; urgency=medium
+
+  * Fix the install failing in the YAML sync setup step (tr range error
+    when making the instance name from the host name).
+  * Start betterguac.target at the end of the install.
+
+ -- Robert Debs <robert@robertdebs.com>  Thu, 19 Nov 2026 06:15:00 -0600
+
+betterguac (1.6.0+bg2) trixie; urgency=medium
+
+  * Built from the post-rebrand state: BetterGuac services, /betterguac web
+    address, betterguac-sync, guacd -c option patch.
+  * First fresh-install package of the BetterGuac build.
+  * guacd 1.6.0 with the FreeRDP 3 post-connect GDI initialisation fix.
+  * Web application on Debian's Tomcat 10 (converted from javax to jakarta
+    at build time), patched JDBC MySQL/MariaDB extension (user-group delete
+    and sign-in history fixes), TOTP with issuer BetterGuac, BetterGuac UI
+    and profile extension, SSH keys by file path, YAML sync tool.
+
+ -- Robert Debs <robert@robertdebs.com>  Thu, 19 Nov 2026 06:00:00 -0600

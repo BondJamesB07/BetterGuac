@@ -1,0 +1,239 @@
+<meta name="before-children" content=".settings.section.connections">
+<div class="bg-server-manager" ng-controller="bgServerManagerController">
+
+    <div class="bg-sm-loading" ng-show="!bgSm.loaded && !bgSm.loadError">Loading servers...</div>
+    <div class="bg-sm-error" ng-show="bgSm.loadError">{{ bgSm.loadError }}</div>
+
+    <div ng-show="bgSm.loaded">
+
+        <!-- Failed servers: a pill at the top opens a popup with the list -->
+        <button type="button" class="bg-sm-failed-pill" ng-show="bgFailedRows().length" ng-click="bgSm.failedOpen = true" aria-haspopup="dialog">
+            <span class="bg-dot bg-dot-failed"></span>
+            {{ bgFailedRows().length }} {{ bgFailedRows().length === 1 ? 'server failed' : 'servers failed' }} the connection test
+            <span class="bg-sm-failed-pill-open">View</span>
+        </button>
+
+        <div class="bg-sm-modal-backdrop" ng-show="bgSm.failedOpen && bgFailedRows().length" ng-click="bgSm.failedOpen = false"></div>
+        <div class="bg-sm-modal" role="dialog" aria-modal="true" aria-labelledby="bg-sm-failed-title"
+             ng-show="bgSm.failedOpen && bgFailedRows().length" ng-keydown="$event.keyCode === 27 && (bgSm.failedOpen = false)" tabindex="-1">
+            <div class="bg-sm-modal-head">
+                <span class="bg-dot bg-dot-failed"></span>
+                <h3 id="bg-sm-failed-title">{{ bgFailedRows().length }} {{ bgFailedRows().length === 1 ? "server didn't" : "servers didn't" }} answer</h3>
+                <button type="button" class="bg-sm-modal-close" ng-click="bgSm.failedOpen = false" aria-label="Close">&times;</button>
+            </div>
+            <p class="bg-sm-modal-sub">Tested from the BetterGuac server, with each server's type and port. Click a name to jump to its row.</p>
+            <ul class="bg-sm-failed-list">
+                <li ng-repeat="row in bgFailedRows() track by row.key" data-key="{{ row.key }}">
+                    <span class="bg-dot" ng-class="'bg-dot-' + (bgTestState(row) || 'none')"></span>
+                    <span class="bg-sm-failed-main">
+                        <a href="" class="bg-sm-failed-name" ng-click="bgSm.failedOpen = false; bgFocusRow(row)">{{ row.name || '(no name)' }}</a>
+                        <span class="bg-sm-failed-target">{{ row.protocol | uppercase }} {{ row.hostname }}:{{ row.test.port || row.port || bgDefaultPort(row.protocol) }}</span>
+                        <span class="bg-sm-failed-detail">{{ bgTestState(row) === 'running' ? 'Testing...' : row.test.detail }}</span>
+                        <span class="bg-sm-failed-stale" ng-show="bgTestState(row) === 'stale'">Edited since the test.</span>
+                    </span>
+                    <button type="button" class="bg-sm-failed-one" ng-click="bgTestRow(row)" ng-disabled="bgTestState(row) === 'running'">Test again</button>
+                </li>
+            </ul>
+            <div class="bg-sm-modal-foot">
+                <button type="button" class="bg-sm-failed-only" ng-click="bgShowFailedOnly(); bgSm.failedOpen = false">{{ bgSm.filter.group === '__failed__' ? 'Show all servers' : 'Show only these in the list' }}</button>
+                <button type="button" class="bg-sm-retest" ng-click="bgRetestFailed()">Test all of these again</button>
+                <button type="button" class="bg-sm-modal-done" ng-click="bgSm.failedOpen = false">Close</button>
+            </div>
+        </div>
+
+        <div class="bg-sm-title">
+            <h3>Servers</h3>
+            <button type="button" class="bg-help-btn" ng-click="bgSm.helpList = !bgSm.helpList" aria-expanded="{{ !!bgSm.helpList }}" title="What does this list do?" aria-label="Help for the server list">?</button>
+        </div>
+        <div class="bg-help-panel bg-help-list" ng-show="bgSm.helpList">
+            <p><strong>Editing servers in the list</strong></p>
+            <ul>
+                <li>Each row is one server. Change the name, type, host, port or username right in the row.</li>
+                <li>Fill in the empty row at the bottom and press the green <strong>+</strong> (or Enter). The server joins the list and a new empty row opens, so you can keep adding.</li>
+                <li>The red <strong>&times;</strong> marks a server for deletion. It turns grey and crossed out until you save, and <strong>Undo</strong> brings it back.</li>
+                <li>The pencil opens every setting for that server, like domain, security mode and certificates.</li>
+                <li><strong>Test</strong> checks one server from the BetterGuac server's network, using the type and port in its row, even before you save. The dot turns green when it answers (an SSH or VNC greeting, an RDP handshake, or an open port for Telnet and Kubernetes) and red when it doesn't, with the reason under the row. <strong>Test all servers</strong> tests every server shown.</li>
+                <li>After <strong>Test all servers</strong>, a popup lists the servers that didn't answer, with the reason for each. Click a name to jump to its row, test one again, or show only the failed servers in the list. The red button at the top of the page opens the popup again.</li>
+                <li>Password: leave it empty to keep the saved password. Type one only to set or change it.</li>
+                <li>Key file (SSH only): the full path to the server's private key file <em>on the BetterGuac server</em>, like <code>/etc/betterguac/keys/web-01</code>. Don't paste the key itself. Key files go in <code>/etc/betterguac/keys</code>, owned by root with group tomcat and mode 640, so Guacamole can read them but other accounts can't: <code>sudo install -o root -g tomcat -m 640 web-01 /etc/betterguac/keys/</code>. The key is read from the file each time someone opens the server, so it never goes into the database or the browser. Both OpenSSH and PEM (RSA, EC) keys work. If the key has a passphrase, set it with the pencil. <strong>Test</strong> also checks the key file and says what's wrong with it.</li>
+                <li>Port: leave it empty for the usual port of that type (SSH 22, RDP 3389, VNC 5900, Telnet 23, Kubernetes 8080).</li>
+                <li>Groups: type one or more group names, separated by commas, like <code>Proxmox, database</code>. A new name creates the group. A user who's a member of any of a server's groups can open that server. You give users their groups on each user's page.</li>
+                <li><strong>Manage groups</strong> lists every group, empty ones too. Deleting a group keeps its servers and takes away the access it gave its members.</li>
+                <li>The search box and the group buttons above the list only narrow down what you see. <strong>No group</strong> shows servers that aren't in any group.</li>
+                <li>Nothing is changed on the server until you press <strong>Save changes</strong>. Deleting asks you to confirm first. <strong>Discard</strong> throws away everything you haven't saved.</li>
+                <li>Row colors: green edge is new, blue edge is changed, red means something needs fixing.</li>
+                <li>The empty row keeps the type and groups you used last, so adding several servers to one group is quick.</li>
+            </ul>
+        </div>
+
+        <div class="bg-sm-filter" ng-show="bgSm.rows.length">
+            <input type="search" class="bg-sm-search" ng-model="bgSm.filter.text" placeholder="Search name, host or user" aria-label="Search servers">
+            <div class="bg-sm-chips" role="group" aria-label="Filter by group">
+                <button type="button" class="bg-chip" ng-class="{on: !bgSm.filter.group}" ng-click="bgSm.filter.group = null">All <span class="bg-chip-count">{{ bgGroupChips().all }}</span></button>
+                <button type="button" class="bg-chip" ng-repeat="chip in bgGroupChips().chips track by chip.key"
+                        ng-class="{on: bgSm.filter.group === chip.key}" ng-click="bgSetGroupFilter(chip.key)" data-group="{{ chip.name }}">{{ chip.name }} <span class="bg-chip-count">{{ chip.count }}</span></button>
+                <button type="button" class="bg-chip bg-chip-none" ng-show="bgGroupChips().none && bgGroupChips().chips.length"
+                        ng-class="{on: bgSm.filter.group === '__none__'}" ng-click="bgSetGroupFilter('__none__')">No group <span class="bg-chip-count">{{ bgGroupChips().none }}</span></button>
+            </div>
+            <button type="button" class="bg-sm-manage-groups" ng-click="bgGm.open = !bgGm.open; bgGm.confirm = null; bgGm.error = null; bgGm.done = null">{{ bgGm.open ? 'Close groups' : 'Manage groups' }}</button>
+            <button type="button" class="bg-sm-test-all" ng-click="bgTestAll()" ng-disabled="bgSm.testingAll || bgSm.saving">{{ bgSm.testingAll ? 'Testing...' : (bgHiddenCount() ? 'Test shown servers' : 'Test all servers') }}</button>
+            <div class="bg-sm-hidden-note" ng-show="bgHiddenCount()">{{ bgHiddenCount() }} {{ bgHiddenCount() === 1 ? 'server is' : 'servers are' }} hidden by the filter. <a href="" ng-click="bgSm.filter.group = null; bgSm.filter.text = ''">Show all</a></div>
+        </div>
+
+        <div class="bg-gm" ng-show="bgGm.open">
+            <h3>Server groups</h3>
+            <p class="bg-note">Deleting a group keeps its servers. Its members lose the access the group gave them right away; a server another of their groups gives stays open to them.</p>
+            <p class="bg-note" ng-hide="bgSavedGroups().length">There are no server groups.</p>
+            <ul class="bg-gm-list">
+                <li class="bg-gm-row" ng-repeat="g in bgSavedGroups() track by g.id" data-group="{{ g.name }}">
+                    <span class="bg-gm-name">{{ g.name }}</span>
+                    <span class="bg-gm-counts">{{ g.connections.length }} {{ g.connections.length === 1 ? 'server' : 'servers' }}, {{ g.members.length }} {{ g.members.length === 1 ? 'user' : 'users' }}</span>
+                    <button type="button" class="bg-gm-delete danger" ng-hide="bgGm.confirm === g.id" ng-disabled="bgGm.busy" ng-click="bgGm.confirm = g.id; bgGm.error = null; bgGm.done = null">Delete</button>
+                    <span class="bg-gm-confirm" ng-show="bgGm.confirm === g.id">
+                        Delete {{ g.name }}?<span ng-show="g.members.length"> {{ g.members.join(', ') }} lose access through it.</span>
+                        <button type="button" class="bg-gm-confirm-yes danger" ng-disabled="bgGm.busy" ng-click="bgDeleteGroup(g)">{{ bgGm.busy ? 'Deleting...' : 'Yes, delete' }}</button>
+                        <button type="button" class="bg-gm-confirm-no cancel" ng-disabled="bgGm.busy" ng-click="bgGm.confirm = null">Keep it</button>
+                    </span>
+                </li>
+            </ul>
+            <p class="bg-gm-error bg-error" ng-show="bgGm.error">{{ bgGm.error }}</p>
+            <p class="bg-gm-done" ng-show="bgGm.done">{{ bgGm.done }}</p>
+        </div>
+
+        <datalist id="bg-sm-group-names"><option ng-repeat="g in bgSm.groupNames" value="{{ g }}"></option></datalist>
+
+        <div class="bg-sm-list" role="table" aria-label="Servers">
+
+            <div class="bg-sm-head" role="row">
+                <span role="columnheader">Name</span>
+                <span role="columnheader">Type</span>
+                <span role="columnheader">Host</span>
+                <span role="columnheader">Port</span>
+                <span role="columnheader">Username</span>
+                <span role="columnheader">Password</span>
+                <span role="columnheader" title="SSH only: the path to the private key file on the BetterGuac server">Key file</span>
+                <span role="columnheader">Groups</span>
+                <span role="columnheader" class="bg-sm-actions-head"></span>
+            </div>
+
+            <div class="bg-sm-row" role="row" ng-repeat="row in bgSm.rows track by row.key" ng-show="bgVisible(row)"
+                 ng-class="{'bg-sm-deleted': row.deleted, 'bg-sm-new': row.isNew, 'bg-sm-changed': bgIsChanged(row) && !row.deleted, 'bg-sm-invalid': row.problems.length, 'bg-sm-saved': row.status === 'saved', 'bg-sm-failed': row.status === 'failed'}"
+                 data-name="{{ row.name }}" data-key="{{ row.key }}">
+                <input class="bg-sm-name" type="text" ng-model="row.name" ng-disabled="row.deleted || bgSm.saving" placeholder="Name" aria-label="Name" autocomplete="off">
+                <select class="bg-sm-proto" ng-model="row.protocol" ng-disabled="row.deleted || bgSm.saving" aria-label="Type"
+                        ng-options="p.value as p.label for p in bgProtocols"></select>
+                <input class="bg-sm-host" type="text" ng-model="row.hostname" ng-disabled="row.deleted || bgSm.saving" placeholder="Host or IP" aria-label="Host" autocomplete="off" spellcheck="false">
+                <input class="bg-sm-port" type="text" inputmode="numeric" ng-model="row.port" ng-disabled="row.deleted || bgSm.saving" placeholder="{{ bgDefaultPort(row.protocol) }}" aria-label="Port" autocomplete="off">
+                <input class="bg-sm-user" type="text" ng-model="row.username" ng-disabled="row.deleted || bgSm.saving" placeholder="Username" aria-label="Username" autocomplete="off" spellcheck="false">
+                <input class="bg-sm-pass" type="password" ng-model="row.password" ng-disabled="row.deleted || bgSm.saving" placeholder="{{ row.isNew ? 'Password' : 'Unchanged' }}" aria-label="Password" autocomplete="new-password">
+                <input class="bg-sm-key" type="text" ng-model="row.keyfile" ng-disabled="row.deleted || bgSm.saving || (row.protocol !== 'ssh' && !row.keyfile)" placeholder="{{ row.protocol === 'ssh' ? (row.pastedKey ? 'Pasted key: enter a path' : '/etc/betterguac/keys/...') : 'SSH only' }}" aria-label="SSH private key file" autocomplete="off" spellcheck="false" title="{{ row.keyfile || 'Path to the private key file on the BetterGuac server, like /etc/betterguac/keys/web-01' }}">
+                <input class="bg-sm-groups" type="text" ng-model="row.groups" ng-disabled="row.deleted || bgSm.saving" placeholder="No group" aria-label="Groups" autocomplete="off" list="bg-sm-group-names">
+                <span class="bg-sm-actions">
+                    <button type="button" class="bg-sm-test" ng-hide="row.deleted" ng-disabled="bgSm.saving || bgTestState(row) === 'running'" ng-click="bgTestRow(row)"
+                            title="Test connection: checks {{ bgProtoLabel(row.protocol) }} on port {{ row.port || bgDefaultPort(row.protocol) }} from the BetterGuac server" aria-label="Test connection">
+                        <span class="bg-dot" ng-class="'bg-dot-' + (bgTestState(row) || 'none')"></span><span class="bg-sm-test-label">Test</span>
+                    </button>
+                    <a class="bg-sm-edit" ng-hide="row.isNew || row.deleted" ng-href="{{ bgEditURL(row) }}" title="All settings for this server" aria-label="All settings"><svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zm17.71-10.21a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a>
+                    <button type="button" class="bg-sm-remove" ng-hide="row.deleted" ng-disabled="bgSm.saving" ng-click="bgRemove(row)" title="{{ row.isNew ? 'Remove this row' : 'Delete this server' }}" aria-label="Delete">&times;</button>
+                    <button type="button" class="bg-sm-undo" ng-show="row.deleted" ng-disabled="bgSm.saving" ng-click="row.deleted = false">Undo</button>
+                </span>
+                <div class="bg-sm-row-note" ng-show="row.group">In the folder {{ row.group }} (groups view)</div>
+                <div class="bg-sm-row-problems" ng-show="row.problems.length">{{ row.problems.join(' ') }}</div>
+                <div class="bg-sm-row-status" ng-show="row.statusText">{{ row.statusText }}</div>
+                <div class="bg-sm-row-test" ng-show="row.test && !row.deleted" ng-class="'bg-test-' + bgTestState(row)">
+                    <span ng-show="bgTestState(row) === 'running'">Testing {{ bgProtoLabel(row.protocol) }} on port {{ row.port || bgDefaultPort(row.protocol) }}...</span>
+                    <span ng-hide="bgTestState(row) === 'running'">{{ row.test.detail }}<span ng-show="row.test.ms !== undefined && bgTestState(row) !== 'stale'"> ({{ row.test.ms }} ms)</span><span ng-show="bgTestState(row) === 'stale'"> This was before your edit. Press Test again.</span></span>
+                </div>
+            </div>
+
+            <!-- The blank row: + adds it to the list and opens another -->
+            <div class="bg-sm-row bg-sm-blank" role="row" ng-class="{'bg-sm-invalid': bgSm.blank.problems.length}">
+                <input class="bg-sm-name" type="text" ng-model="bgSm.blank.name" ng-disabled="bgSm.saving" placeholder="New server name" aria-label="New server name" autocomplete="off" ng-keydown="$event.keyCode === 13 && bgAdd()">
+                <select class="bg-sm-proto" ng-model="bgSm.blank.protocol" ng-disabled="bgSm.saving" aria-label="New server type"
+                        ng-options="p.value as p.label for p in bgProtocols"></select>
+                <input class="bg-sm-host" type="text" ng-model="bgSm.blank.hostname" ng-disabled="bgSm.saving" placeholder="Host or IP" aria-label="New server host" autocomplete="off" spellcheck="false" ng-keydown="$event.keyCode === 13 && bgAdd()">
+                <input class="bg-sm-port" type="text" inputmode="numeric" ng-model="bgSm.blank.port" ng-disabled="bgSm.saving" placeholder="{{ bgDefaultPort(bgSm.blank.protocol) }}" aria-label="New server port" autocomplete="off" ng-keydown="$event.keyCode === 13 && bgAdd()">
+                <input class="bg-sm-user" type="text" ng-model="bgSm.blank.username" ng-disabled="bgSm.saving" placeholder="Username" aria-label="New server username" autocomplete="off" spellcheck="false" ng-keydown="$event.keyCode === 13 && bgAdd()">
+                <input class="bg-sm-pass" type="password" ng-model="bgSm.blank.password" ng-disabled="bgSm.saving" placeholder="Password" aria-label="New server password" autocomplete="new-password" ng-keydown="$event.keyCode === 13 && bgAdd()">
+                <input class="bg-sm-key" type="text" ng-model="bgSm.blank.keyfile" ng-disabled="bgSm.saving || (bgSm.blank.protocol !== 'ssh' && !bgSm.blank.keyfile)" placeholder="{{ bgSm.blank.protocol === 'ssh' ? 'Key file path' : 'SSH only' }}" aria-label="New server SSH private key file" autocomplete="off" spellcheck="false" ng-keydown="$event.keyCode === 13 && bgAdd()">
+                <input class="bg-sm-groups" type="text" ng-model="bgSm.blank.groups" ng-disabled="bgSm.saving" placeholder="Groups" aria-label="New server groups" autocomplete="off" list="bg-sm-group-names" ng-keydown="$event.keyCode === 13 && bgAdd()">
+                <span class="bg-sm-actions">
+                    <button type="button" class="bg-sm-add" ng-disabled="bgSm.saving" ng-click="bgAdd()" title="Add this server to the list" aria-label="Add server">+</button>
+                </span>
+                <div class="bg-sm-row-problems" ng-show="bgSm.blank.problems.length">{{ bgSm.blank.problems.join(' ') }}</div>
+            </div>
+        </div>
+
+        <div class="bg-sm-savebar">
+            <span class="bg-sm-summary">{{ bgSummary() }}</span>
+            <button type="button" class="bg-sm-discard" ng-disabled="bgSm.saving || !bgPendingCount()" ng-click="bgDiscard()">Discard</button>
+            <button type="button" class="bg-sm-save" ng-disabled="bgSm.saving || !bgPendingCount()" ng-click="bgSave()">{{ bgSm.saving ? 'Saving...' : 'Save changes' }}</button>
+        </div>
+        <div class="bg-sm-result" ng-show="bgSm.result" ng-class="{'bg-sm-result-bad': bgSm.resultBad}">{{ bgSm.result }}</div>
+
+        <!-- Bulk editor -->
+        <div class="bg-sm-bulk">
+            <div class="bg-sm-title">
+                <h3>Add or update many servers at once</h3>
+                <button type="button" class="bg-help-btn" ng-click="bgSm.helpBulk = !bgSm.helpBulk" aria-expanded="{{ !!bgSm.helpBulk }}" title="How should the list be formatted?" aria-label="Help for the bulk editor">?</button>
+            </div>
+            <div class="bg-help-panel bg-help-bulk" ng-show="bgSm.helpBulk">
+                <p><strong>How it works:</strong> paste your list, press <strong>Verify</strong> to see each line in a table, then press <strong>Apply</strong>. The good lines fill in the rows in the list above. Then press <strong>Save changes</strong> to keep them.</p>
+                <p><strong>Connectivity:</strong> Verify also tests every good line from the BetterGuac server itself, with that line's type and port. A green dot means the server answered: an SSH or VNC greeting, or an RDP handshake. For Telnet and Kubernetes only the port is checked. A red dot means it didn't, and the reason is next to it. A red dot doesn't stop you from applying the line.</p>
+                <p><strong>Format:</strong> one server per line, columns in this order:</p>
+                <pre class="bg-help-format">name, type, host, port, username, key file, groups</pre>
+                <ul>
+                    <li><strong>name</strong>: required. If a server with that name is already in the list, the line updates it instead of adding a new one.</li>
+                    <li><strong>type</strong>: required. ssh, rdp, vnc, telnet or kubernetes. Upper or lower case both work.</li>
+                    <li><strong>host</strong>: required. Host name or IP address, no spaces. You can write <code>host:port</code> here instead of using the port column.</li>
+                    <li><strong>port</strong>: optional. 1 to 65535. Empty means the usual port for that type.</li>
+                    <li><strong>username</strong>: optional.</li>
+                    <li><strong>key file</strong>: optional, SSH only. The full path to the private key file on the BetterGuac server, like <code>/etc/betterguac/keys/web-01</code>. It must start with <code>/</code>; anything else in this column is read as a group, so lists written before key files still work. Never paste the key itself here. Verify checks that the file is there and Guacamole can read it.</li>
+                    <li><strong>groups</strong>: optional. With commas, every column after the key file (or after the username, when there's no key file) is a group, so <code>..., admin, Proxmox, database</code> puts the server in both. With tabs, put the groups in one cell separated by commas or semicolons. With tabs, the key file is the 6th column and groups the 7th. To give groups but no port or username, leave those columns empty: <code>NAS, ssh, 192.0.2.5, , , storage</code>.</li>
+                    <li>Separate columns with commas or tabs, so a copy from a spreadsheet works. A first line starting with "name" is treated as a header and skipped, and lines starting with # are ignored.</li>
+                    <li>For a server that's already in the list, an empty port, username, key file or groups column leaves its current value. Groups you do give replace its current groups.</li>
+                    <li>Passwords aren't taken here, so they don't sit in plain text. Type them in the list above.</li>
+                    <li>Lines with a problem are shown in red with the reason and are left in the box after Apply, so you can fix them.</li>
+                </ul>
+                <p><strong>Example:</strong></p>
+                <pre class="bg-help-format">name, type, host, port, username, key file, groups
+Web-01, ssh, 192.0.2.50, 22, admin, /etc/betterguac/keys/web-01, web
+PVE-1, ssh, 192.0.2.10, 22, root, /etc/betterguac/keys/pve, Proxmox, database
+NAS, ssh, 192.0.2.5, 22, user, , storage
+Desk-PC, rdp, 192.0.2.60:3389, user
+Lab-Switch, telnet, 192.0.2.2</pre>
+            </div>
+            <textarea class="bg-sm-bulk-text" ng-model="bgSm.bulkText" ng-disabled="bgSm.saving" rows="6" spellcheck="false"
+                      placeholder="Web-01, ssh, 192.0.2.50, 22, admin, web&#10;PVE-1, ssh, 192.0.2.10, 22, root, Proxmox, database&#10;Desk-PC, rdp, 192.0.2.60:3389, user"></textarea>
+            <div class="bg-sm-bulk-buttons">
+                <button type="button" class="bg-sm-check" ng-disabled="bgSm.saving || !bgSm.bulkText.trim()" ng-click="bgCheckBulk()">Verify</button>
+                <button type="button" class="bg-sm-apply" ng-show="bgSm.bulk" ng-disabled="bgSm.saving || !bgBulkValidCount()" ng-click="bgApplyBulk()">Apply {{ bgBulkValidCount() }} to the list</button>
+                <button type="button" class="bg-sm-bulk-clear" ng-show="bgSm.bulk" ng-click="bgSm.bulk = null">Close table</button>
+            </div>
+            <div class="bg-sm-bulk-message" ng-show="bgSm.bulkMessage">{{ bgSm.bulkMessage }}</div>
+            <table class="bg-sm-bulk-table" ng-show="bgSm.bulk">
+                <thead><tr><th>Line</th><th>Name</th><th>Type</th><th>Host</th><th>Port</th><th>Username</th><th>Key file</th><th>Groups</th><th>Connectivity</th><th>Result</th></tr></thead>
+                <tbody>
+                    <tr ng-repeat="b in bgSm.bulk" ng-class="{'bg-sm-bulk-bad': b.errors.length, 'bg-sm-bulk-update': !b.errors.length && b.target}">
+                        <td>{{ b.line }}</td>
+                        <td>{{ b.name }}</td>
+                        <td>{{ b.protocolLabel }}</td>
+                        <td>{{ b.hostname }}</td>
+                        <td>{{ b.port || ('(' + bgDefaultPort(b.protocol) + ')') }}</td>
+                        <td>{{ b.username }}</td>
+                        <td class="bg-bulk-key">{{ b.keyfile }}</td>
+                        <td>{{ b.groups }}</td>
+                        <td class="bg-sm-bulk-conn">
+                            <span ng-show="b.test" class="bg-dot" ng-class="b.test.running ? 'bg-dot-running' : (b.test.ok === true ? 'bg-dot-ok' : (b.test.ok === false ? 'bg-dot-failed' : 'bg-dot-error'))" title="{{ b.test.detail }}"></span>
+                            <span class="bg-sm-conn-text" ng-show="b.test">{{ b.test.running ? 'Testing...' : b.test.detail }}</span>
+                            <span class="bg-muted" ng-hide="b.test">Not tested</span>
+                        </td>
+                        <td class="bg-sm-bulk-result">{{ b.errors.length ? b.errors.join(' ') : (b.target ? 'Updates ' + b.target.name : 'New server') }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <p class="bg-sm-classic-toggle"><a href="" ng-click="bgToggleClassic()">{{ bgSm.classic ? 'Hide the groups view' : 'Show the groups view (connection groups, active sessions, import)' }}</a></p>
+    </div>
+</div>

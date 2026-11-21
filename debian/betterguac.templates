@@ -1,0 +1,15 @@
+Template: betterguac/admin-email
+Type: string
+Default:
+Description: Email address for the first BetterGuac administrator:
+ BetterGuac signs people in with their email address. This creates the
+ first administrator account with this email as its sign-in name.
+ .
+ Leave it empty to create an account named "admin" instead.
+
+Template: betterguac/admin-password
+Type: password
+Description: Password for the first BetterGuac administrator:
+ Leave it empty to have a strong random password generated. A generated
+ password is saved in /etc/betterguac/initial-admin.txt, readable only by
+ root.

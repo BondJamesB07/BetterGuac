@@ -1,0 +1,57 @@
+Source: betterguac
+Section: net
+Priority: optional
+Maintainer: Robert Debs <robert@robertdebs.com>
+Rules-Requires-Root: no
+Build-Depends: debhelper-compat (= 13),
+               default-jdk-headless,
+               freerdp3-dev,
+               libavcodec-dev,
+               libavformat-dev,
+               libavutil-dev,
+               libcairo2-dev,
+               libjpeg62-turbo-dev | libjpeg-dev,
+               libpango1.0-dev,
+               libpng-dev,
+               libpulse-dev,
+               libssh2-1-dev,
+               libssl-dev,
+               libswscale-dev,
+               libtelnet-dev,
+               libtool-bin,
+               libvncserver-dev,
+               libvorbis-dev,
+               libwebp-dev,
+               libwebsockets-dev,
+               pkgconf,
+               python3,
+               tomcat-jakartaee-migration,
+               uuid-dev,
+               zip,
+               unzip
+Standards-Version: 4.7.2
+Homepage: https://robertdebs.com
+
+Package: betterguac
+Architecture: any
+Depends: ${shlibs:Depends},
+         ${misc:Depends},
+         mariadb-server,
+         mariadb-client,
+         fonts-dejavu-core,
+         libmariadb-java,
+         python3,
+         python3-pymysql,
+         python3-yaml,
+         tomcat10
+Conflicts: guacd, libguac-client-rdp0
+Description: remote access gateway based on Apache Guacamole
+ BetterGuac is a clientless remote desktop gateway for SSH, RDP, VNC and
+ Telnet, built on Apache Guacamole 1.6.0. This package installs everything
+ on one machine: guacd (with the FreeRDP 3 post-connect graphics fix), the
+ web application on Tomcat 10, MariaDB storage, two-factor sign-in, the
+ BetterGuac interface and profile extension, SSH keys referenced by file
+ path, and the YAML-to-database sync tool.
+ .
+ A fresh install creates an empty database with a random password and one
+ administrator account. No servers, users or keys are included.

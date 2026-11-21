@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Sends every request here to the same path under /betterguac/. -->
+<web-app xmlns="https://jakarta.ee/xml/ns/jakartaee" version="6.0">
+    <servlet>
+        <servlet-name>to-betterguac</servlet-name>
+        <jsp-file>/redirect.jsp</jsp-file>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>to-betterguac</servlet-name>
+        <url-pattern>/</url-pattern>
+    </servlet-mapping>
+</web-app>

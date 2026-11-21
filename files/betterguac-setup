@@ -1,0 +1,281 @@
+#!/bin/bash
+# BetterGuac setup helper, used by the package's maintainer scripts and by
+# betterguac-admin. Every step checks first and never overwrites settings,
+# accounts or data that already exist, so it is safe to run again.
+set -euo pipefail
+umask 022
+
+CONF=/etc/betterguac
+PROPS=$CONF/guacamole.properties
+KEYS=$CONF/keys
+SYNC_ENV=$CONF/sync.env
+ADMIN_FILE=$CONF/initial-admin.txt
+SHARE=/usr/share/betterguac
+STATE=/var/lib/betterguac
+DB_NAME=betterguac
+DB_USER=betterguac
+SYNC_DB=betterguac_yamlsync
+SYNC_USER=betterguac_sync
+TOMCAT_GROUP=tomcat
+CTXDIR=/etc/tomcat10/Catalina/localhost
+CONTEXT=$CTXDIR/betterguac.xml
+
+say()  { echo "betterguac: $*"; }
+die()  { echo "betterguac: error: $*" >&2; exit 1; }
+
+randpw() { python3 -c 'import secrets; print(secrets.token_urlsafe(24))'; }
+
+sql() { mariadb --protocol=socket -uroot -N -B "$@"; }
+
+have_systemd() { [ -d /run/systemd/system ]; }
+
+wait_for_db() {
+    local i
+    for i in $(seq 1 30); do
+        if sql -e 'SELECT 1' >/dev/null 2>&1; then return 0; fi
+        if [ "$i" = 1 ]; then
+            if have_systemd; then systemctl start mariadb.service >/dev/null 2>&1 || true
+            else invoke-rc.d mariadb start >/dev/null 2>&1 || true; fi
+        fi
+        sleep 1
+    done
+    return 1
+}
+
+prop() { # prop <name>: value of a property in guacamole.properties
+    sed -n -E "s/^[[:space:]]*$1[[:space:]]*[:=][[:space:]]*(.*)$/\1/p" "$PROPS" | tail -n1
+}
+
+setup_dirs() {
+    install -d -m 0755 "$CONF" "$CONF/extensions" "$CONF/lib"
+    install -d -m 0750 "$STATE"
+    if [ ! -d "$KEYS" ]; then
+        install -d -m 0751 -o root -g "$TOMCAT_GROUP" "$KEYS"
+    fi
+    # the web app reads keys as the tomcat group; nobody else may list the folder
+    chown root:"$TOMCAT_GROUP" "$KEYS"; chmod 0751 "$KEYS"
+}
+
+setup_database() {
+    local pw tables
+    if [ ! -s "$PROPS" ]; then
+        pw=$(randpw)
+        say "creating database $DB_NAME and its account"
+        sql <<EOF
+CREATE DATABASE IF NOT EXISTS \`$DB_NAME\` CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+CREATE USER IF NOT EXISTS '$DB_USER'@'localhost' IDENTIFIED BY '$pw';
+ALTER USER '$DB_USER'@'localhost' IDENTIFIED BY '$pw';
+GRANT SELECT, INSERT, UPDATE, DELETE ON \`$DB_NAME\`.* TO '$DB_USER'@'localhost';
+FLUSH PRIVILEGES;
+EOF
+        local tmp
+        tmp=$(mktemp "$CONF/.props.XXXXXX")
+        sed -e "s/@DB_NAME@/$DB_NAME/" -e "s/@DB_USER@/$DB_USER/" -e "s/@DB_PASS@/$pw/" \
+            "$SHARE/templates/guacamole.properties.in" > "$tmp"
+        chown root:"$TOMCAT_GROUP" "$tmp"; chmod 0640 "$tmp"
+        mv "$tmp" "$PROPS"
+    else
+        chown root:"$TOMCAT_GROUP" "$PROPS"; chmod 0640 "$PROPS"
+    fi
+    tables=$(sql -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='$DB_NAME' AND table_name='guacamole_user'")
+    if [ "$tables" = 0 ]; then
+        say "creating the database tables"
+        sql "$DB_NAME" < "$SHARE/schema/001-create-schema.sql"
+    fi
+}
+
+hash_sql_user() { # print the SQL that creates or updates an account; args via env
+    python3 - <<'EOF'
+import os, secrets, hashlib
+name = os.environ['BG_USER']; pw = os.environ['BG_PASS']
+salt = secrets.token_bytes(32)
+h = hashlib.sha256((pw + salt.hex().upper()).encode('utf-8')).hexdigest()
+def q(s): return "'" + s.replace('\\', '\\\\').replace("'", "''") + "'"
+print("SET @n = %s, @h = UNHEX('%s'), @s = UNHEX('%s');" % (q(name), h, salt.hex()))
+print("SET @email = %s;" % (q(os.environ.get('BG_EMAIL', '')) if os.environ.get('BG_EMAIL') else 'NULL'))
+EOF
+}
+
+create_admin() {
+    local email="${BETTERGUAC_ADMIN_EMAIL:-}" pw="${BETTERGUAC_ADMIN_PASSWORD:-}" user generated=no
+    local admins
+    admins=$(sql "$DB_NAME" -e "SELECT COUNT(*) FROM guacamole_system_permission WHERE permission='ADMINISTER'")
+    if [ "$admins" != 0 ]; then return 0; fi
+    email=$(printf '%s' "$email" | tr -d '[:space:]')
+    if [ -n "$email" ]; then user=$email; else user=admin; fi
+    # Setup administrator: a long password by default and no two-factor.
+    # The TOTP extension checks the per-user attribute guac-totp-disabled
+    # (TOTP_KEY_DISABLED_ATTRIBUTE_NAME in guacamole-auth-totp's TOTPUser /
+    # UserVerificationService); when it is "true", enrollment and codes are
+    # skipped. This account exists to create the real administrators.
+    if [ -z "$pw" ]; then pw=$(python3 -c 'import secrets; print(secrets.token_urlsafe(48))'); generated=yes; fi
+    say "creating the first administrator: $user"
+    {
+        BG_USER=$user BG_PASS=$pw BG_EMAIL=$email hash_sql_user
+        cat <<'EOF'
+INSERT INTO guacamole_entity (name, type) VALUES (@n, 'USER');
+SET @e = LAST_INSERT_ID();
+INSERT INTO guacamole_user (entity_id, password_hash, password_salt, password_date, email_address, full_name)
+    VALUES (@e, @h, @s, NOW(), @email, 'Administrator');
+SET @u = LAST_INSERT_ID();
+INSERT INTO guacamole_user_attribute (user_id, attribute_name, attribute_value)
+    VALUES (@u, 'guac-totp-disabled', 'true');
+INSERT INTO guacamole_system_permission (entity_id, permission) VALUES
+    (@e, 'CREATE_CONNECTION'), (@e, 'CREATE_CONNECTION_GROUP'), (@e, 'CREATE_SHARING_PROFILE'),
+    (@e, 'CREATE_USER'), (@e, 'CREATE_USER_GROUP'), (@e, 'ADMINISTER');
+INSERT INTO guacamole_user_permission (entity_id, affected_user_id, permission) VALUES
+    (@e, @u, 'READ'), (@e, @u, 'UPDATE'), (@e, @u, 'ADMINISTER');
+EOF
+    } | sql "$DB_NAME"
+    local tmp
+    tmp=$(umask 077; mktemp "$CONF/.admin.XXXXXX")
+    {
+        echo "# First BetterGuac administrator, created $(date -R)."
+        echo "# Delete this file once you have signed in and changed the password."
+        echo "username: $user"
+        if [ "$generated" = yes ]; then
+            echo "password: $pw"
+        else
+            echo "password: (the one you typed during installation)"
+        fi
+    } > "$tmp"
+    chmod 0600 "$tmp"; mv "$tmp" "$ADMIN_FILE"
+    if [ "$generated" = yes ]; then
+        say "the administrator's password is in $ADMIN_FILE (root only)"
+    fi
+    echo "$user" > "$STATE/admin-user"
+}
+
+setup_yaml_sync() {
+    if [ -s "$SYNC_ENV" ]; then
+        chmod 0600 "$SYNC_ENV"
+    else
+        create_sync_login
+    fi
+    sync_instance_and_yaml
+}
+
+create_sync_login() {
+    local pw admin
+    pw=$(randpw)
+    admin=$(cat "$STATE/admin-user" 2>/dev/null || true)
+    say "setting up the YAML sync tool"
+    sed "s/guac_yamlsync/$SYNC_DB/g" /usr/lib/betterguac/sync/state-schema.sql | sql
+    sql <<EOF
+CREATE USER IF NOT EXISTS '$SYNC_USER'@'localhost' IDENTIFIED BY '$pw';
+ALTER USER '$SYNC_USER'@'localhost' IDENTIFIED BY '$pw';
+GRANT SELECT, INSERT, UPDATE, DELETE ON \`$DB_NAME\`.* TO '$SYNC_USER'@'localhost';
+GRANT SELECT, INSERT, UPDATE, DELETE ON \`$SYNC_DB\`.* TO '$SYNC_USER'@'localhost';
+FLUSH PRIVILEGES;
+EOF
+    local tmp
+    tmp=$(umask 077; mktemp "$CONF/.sync.XXXXXX")
+    cat > "$tmp" <<EOF
+# Database login for betterguac-sync (root only). Created by the package.
+GUAC_SYNC_DB_SOCKET=/run/mysqld/mysqld.sock
+GUAC_SYNC_DB_NAME=$DB_NAME
+GUAC_SYNC_STATE_DB=$SYNC_DB
+GUAC_SYNC_DB_USER=$SYNC_USER
+GUAC_SYNC_DB_PASSWORD=$pw
+GUAC_SSH_KEY_DIR=$KEYS
+# Accounts the sync never creates, changes or deletes (comma separated)
+GUAC_SYNC_PROTECTED_USERS=guacadmin${admin:+,$admin}
+EOF
+    chmod 0600 "$tmp"; mv "$tmp" "$SYNC_ENV"
+}
+
+sync_instance_and_yaml() {
+    local instance
+    # the sync tool records which BetterGuac machine this database belongs to
+    instance=$( (hostname -s 2>/dev/null || true) | tr 'A-Z' 'a-z' | tr -c 'a-z0-9._\n-' '-' | sed 's/^[^a-z0-9]*//' | cut -c1-60) || instance=
+    [ -n "$instance" ] || instance=betterguac
+    if [ -z "$(sql -e "SELECT instance_id FROM \`$SYNC_DB\`.sync_meta WHERE id = 1")" ]; then
+        GUAC_SYNC_ENV=$SYNC_ENV python3 /usr/lib/betterguac/sync/betterguac_sync.py init --instance "$instance" >/dev/null
+    fi
+    instance=$(sql -e "SELECT instance_id FROM \`$SYNC_DB\`.sync_meta WHERE id = 1")
+    if [ ! -e "$CONF/betterguac.yaml" ]; then
+        sed "s/@INSTANCE@/$instance/" "$SHARE/betterguac.yaml.starter" > "$CONF/betterguac.yaml"
+        chmod 0600 "$CONF/betterguac.yaml"
+    fi
+}
+
+setup_tomcat() {
+    install -d -m 0755 "$(dirname "$CONTEXT")"
+    install -m 0644 "$SHARE/templates/context.xml.in" "$CONTEXT"
+    # old /guacamole bookmarks go to /betterguac
+    install -m 0644 "$SHARE/templates/redirect-context.xml.in" "$CTXDIR/guacamole.xml"
+    # the bare server address too, unless something else already owns it
+    if [ ! -e "$CTXDIR/ROOT.xml" ] || grep -q 'managed by the betterguac package' "$CTXDIR/ROOT.xml"; then
+        install -m 0644 "$SHARE/templates/redirect-context.xml.in" "$CTXDIR/ROOT.xml"
+    fi
+    if have_systemd; then
+        systemctl daemon-reload || true
+        systemctl enable --quiet tomcat10.service mariadb.service betterguac.target 2>/dev/null || true
+        systemctl restart tomcat10.service || say "warning: the web app didn't restart; see journalctl -u tomcat10"
+        systemctl start betterguac.target 2>/dev/null || true
+    fi
+}
+
+url() {
+    local ip port
+    ip=$(hostname -I 2>/dev/null | awk '{print $1}')
+    port=$(sed -n -E 's/.*<Connector port="([0-9]+)" protocol="HTTP.*/\1/p' /etc/tomcat10/server.xml 2>/dev/null | head -n1)
+    echo "http://${ip:-localhost}:${port:-8080}/betterguac/"
+}
+
+cmd_configure() {
+    [ "$(id -u)" = 0 ] || die "run this as root"
+    getent group "$TOMCAT_GROUP" >/dev/null || die "the $TOMCAT_GROUP group is missing (is tomcat10 installed?)"
+    setup_dirs
+    wait_for_db || die "MariaDB isn't answering. Start it (systemctl start mariadb), then run: sudo dpkg --configure -a"
+    setup_database
+    create_admin
+    setup_yaml_sync
+    setup_tomcat
+    say "BetterGuac is at $(url)"
+}
+
+cmd_status() {
+    local s
+    for s in mariadb betterguac-guacd tomcat10; do
+        printf '%-18s %s\n' "$s" "$(systemctl is-active $s 2>/dev/null || true)"
+    done
+    echo "sign-in address:   $(url)"
+    echo "settings:          $CONF"
+    echo "SSH keys:          $KEYS"
+    [ -e "$ADMIN_FILE" ] && echo "first admin:       $ADMIN_FILE"
+    return 0
+}
+
+cmd_reset_password() {
+    local user=${1:-} pw n
+    [ -n "$user" ] || die "usage: betterguac-admin reset-password <username>"
+    [ "$(id -u)" = 0 ] || die "run this as root"
+    pw=$(randpw)
+    n=$({ BG_USER=$user BG_PASS=$pw hash_sql_user
+          cat <<'EOF'
+UPDATE guacamole_user u JOIN guacamole_entity e ON e.entity_id = u.entity_id AND e.type = 'USER'
+   SET u.password_hash = @h, u.password_salt = @s, u.password_date = NOW(), u.disabled = 0
+ WHERE e.name = @n;
+SELECT ROW_COUNT();
+DELETE a FROM guacamole_user_attribute a
+  JOIN guacamole_user u ON u.user_id = a.user_id
+  JOIN guacamole_entity e ON e.entity_id = u.entity_id
+ WHERE e.name = @n AND a.attribute_name IN ('guac-totp-key-secret', 'guac-totp-key-confirmed');
+DELETE a FROM guacamole_user_attribute a
+  JOIN guacamole_user u ON u.user_id = a.user_id
+  JOIN guacamole_entity e ON e.entity_id = u.entity_id
+ WHERE e.name = @n AND a.attribute_name = 'guac-totp-disabled';
+EOF
+        } | sql "$DB_NAME" | head -n1)
+    [ "$n" = 1 ] || die "no account named $user"
+    echo "New password for $user: $pw"
+    echo "Two-factor was reset; $user sets it up again at the next sign-in."
+}
+
+case "${1:-}" in
+    configure|setup) cmd_configure ;;
+    status) cmd_status ;;
+    reset-password) shift; cmd_reset_password "$@" ;;
+    *) echo "usage: betterguac-admin {status|reset-password <username>|setup}" >&2; exit 2 ;;
+esac

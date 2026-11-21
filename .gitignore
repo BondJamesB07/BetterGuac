@@ -1,0 +1,20 @@
+# Build output (dpkg-buildpackage, debhelper)
+build/
+debian/betterguac/
+debian/.debhelper/
+debian/files
+debian/*.substvars
+debian/*.debhelper.log
+debian/debhelper-build-stamp
+*.deb
+*.dsc
+*.changes
+*.buildinfo
+*.tar.xz
+*.tar.gz
+*.orig.tar.*
+
+# Local state and test scratch
+.env
+*.pyc
+__pycache__/

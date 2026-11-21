@@ -1,0 +1,60 @@
+# Example BetterGuac YAML. Every value here is a placeholder: change the
+# names, addresses and key files before you use it. Copy what you need into
+# /etc/betterguac/betterguac.yaml, then:
+#
+#   sudo betterguac-sync check /etc/betterguac/betterguac.yaml
+#   sudo betterguac-sync plan  /etc/betterguac/betterguac.yaml
+#   sudo betterguac-sync apply /etc/betterguac/betterguac.yaml --confirm <plan-id>
+#
+# Passwords never go in this file: write {env: NAME} and put NAME=... in
+# /etc/betterguac/sync.env (root only).
+version: 1
+kind: guacamole-db-sync
+instance: my-betterguac          # a short name for this BetterGuac machine
+
+connections:
+  - key: web-01                  # stable ID the sync uses; never shown to users
+    name: Web-01
+    group: Lab                   # optional folder
+    protocol: ssh
+    params:
+      hostname: 192.0.2.10
+      port: 22
+      username: admin
+      # private key as a file path inside /etc/betterguac/keys
+      # (owner root, group tomcat, mode 640)
+      private-key-file: /etc/betterguac/keys/web-01
+
+  - key: desktop-01
+    name: Desktop-01
+    group: Lab
+    protocol: rdp
+    max_connections_per_user: 1
+    params:
+      hostname: 192.0.2.20
+      port: 3389
+      username: user
+      password: {env: DESKTOP01_PASSWORD}
+      security: nla
+      ignore-cert: true
+
+  - key: nas-vnc
+    name: NAS console
+    protocol: vnc
+    params:
+      hostname: 192.0.2.30
+      port: 5900
+      password: {env: NAS_VNC_PASSWORD}
+
+users:
+  - username: jane@example.com
+    email: jane@example.com
+    full_name: Jane Example
+    password: {env: JANE_PASSWORD}
+    password_mode: initial       # set once; later changes in the web UI are kept
+    connections: [web-01, desktop-01]
+
+  - username: ops-admin@example.com
+    email: ops-admin@example.com
+    password: {env: OPS_ADMIN_PASSWORD}
+    admin: true

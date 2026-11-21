@@ -1,0 +1,33 @@
+<meta name="replace" content="a.home-connection">
+<div class="bg-row" ng-controller="bgConnectionRowController"
+     ng-class="{'bg-open': bgIsOpen()}">
+
+    <!-- Tile, name and type: also launches the connection (or reattaches to it if it is already open) -->
+    <a class="home-connection bg-name"
+       ng-href="{{ item.getClientURL() }}"
+       ng-class="{active: item.getActiveConnections()}">
+        <span class="bg-tile" ng-class="'bg-tile-' + bgKind()" aria-hidden="true">
+            <svg ng-if="bgKind() === 'terminal'" viewBox="0 0 24 24" width="20" height="20"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M5 7l5 5-5 5M12 17h7"/></svg>
+            <svg ng-if="bgKind() !== 'terminal'" viewBox="0 0 24 24" width="20" height="20"><path fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" d="M3.5 4.5h17v11h-17zM8.5 19.5h7M12 15.5v4"/></svg>
+        </span>
+        <span class="bg-name-text">
+            <span class="bg-name-line"><span class="name">{{item.name}}</span><span class="bg-open-tag" ng-if="bgIsOpen()">open</span></span>
+            <span class="bg-type">{{ bgTypeLabel() }}<span class="activeUserCount" ng-show="item.getActiveConnections() && !bgIsOpen()"
+                translate="HOME.INFO_ACTIVE_USER_COUNT"
+                translate-values="{USERS: item.getActiveConnections()}"></span></span>
+        </span>
+    </a>
+
+    <!-- Connect, or Resume / Disconnect when this person has a session open; Edit for admins -->
+    <span class="bg-actions">
+        <a class="bg-btn bg-connect" ng-if="!bgIsOpen()" ng-href="{{ item.getClientURL() }}"
+           aria-label="Connect to {{ item.name }}">Connect</a>
+        <button type="button" class="bg-btn bg-resume" ng-if="bgIsOpen()" ng-disabled="bgEnding"
+                ng-click="bgResume($event)" title="Go back to your open session" aria-label="Resume {{ item.name }}"><svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><path fill="currentColor" d="M8 5v14l11-7z"/></svg><span class="bg-btn-label">Resume</span></button>
+        <button type="button" class="bg-btn bg-end" ng-if="bgIsOpen()" ng-disabled="bgEnding"
+                ng-click="bgEnd($event)" title="End your session on this server" aria-label="Disconnect {{ item.name }}"><svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><path fill="currentColor" d="M13 3h-2v10h2V3zm4.83 2.17-1.42 1.42A6.92 6.92 0 0 1 19 12a7 7 0 1 1-11.42-5.42L6.17 5.17A8.93 8.93 0 0 0 3 12a9 9 0 0 0 18 0c0-2.74-1.23-5.18-3.17-6.83z"/></svg><span class="bg-btn-label">{{ bgEnding ? 'Ending...' : 'Disconnect' }}</span></button>
+        <a class="bg-btn bg-edit" ng-if="bgCanEdit()" ng-href="{{ bgEditURL() }}"
+           title="Edit server settings" aria-label="Edit {{ item.name }}"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" d="M4 20h4L18.5 9.5a2.1 2.1 0 0 0-4-4L4 16v4zM13.5 6.5l4 4"/></svg></a>
+    </span>
+
+</div>

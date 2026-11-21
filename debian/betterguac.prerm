@@ -1,0 +1,21 @@
+#!/bin/sh
+set -e
+
+case "$1" in
+    remove|deconfigure)
+        # undeploy the web application before its files go away
+        rm -f /etc/tomcat10/Catalina/localhost/betterguac.xml /etc/tomcat10/Catalina/localhost/guacamole.xml
+        if grep -qs 'managed by the betterguac package' /etc/tomcat10/Catalina/localhost/ROOT.xml; then
+            rm -f /etc/tomcat10/Catalina/localhost/ROOT.xml
+        fi
+        if [ -d /run/systemd/system ]; then
+            deb-systemd-invoke try-restart tomcat10.service >/dev/null 2>&1 || true
+        fi
+        ;;
+    upgrade|failed-upgrade)
+        ;;
+esac
+
+#DEBHELPER#
+
+exit 0

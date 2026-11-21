@@ -1,0 +1,23 @@
+.TH BETTERGUAC-SYNC 8 "November 2026" "betterguac" "System Administration"
+.SH NAME
+betterguac-sync \- apply a BetterGuac YAML file to the database
+.SH SYNOPSIS
+.B betterguac-sync
+.RB plan
+.I file.yaml
+.br
+.B betterguac-sync
+.RB apply
+.I file.yaml
+.B \-\-confirm
+.I plan-id
+.SH DESCRIPTION
+Reads servers, groups and users from a YAML file, shows a preview of what
+would change, and applies a previewed plan by its ID. It only changes
+objects it created itself and never touches protected accounts. Run
+.B betterguac-sync \-\-help
+for every command.
+.SH FILES
+/etc/betterguac/betterguac.yaml (starter file),
+/usr/share/betterguac/betterguac.yaml.example (full example),
+/etc/betterguac/sync.env (database login, root only)

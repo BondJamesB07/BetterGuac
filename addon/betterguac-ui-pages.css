@@ -1,0 +1,1377 @@
+/*
+ * BetterGuac UI: management, settings and preferences pages in the same
+ * midnight blue as the home and login screens.
+ *
+ * Palette: page #0c1530 -> #0a1229, cards #16244f, raised #1d2f63,
+ * text #e6ebff, muted rgba(230,235,255,.62), accent green #22a55b,
+ * pencil yellow #f2c230.
+ */
+
+body.settings,
+body.manage {
+    background: #0c1530;
+    background-image: linear-gradient(180deg, #111d42 0%, #0a1229 100%);
+    background-attachment: fixed;
+    color: #e6ebff;
+    min-height: 100vh;
+}
+
+body.settings .view,
+body.manage .view {
+    padding: 0.75em 0.75em 2em;
+    max-width: 1240px;
+}
+
+body.settings a,
+body.manage a {
+    color: #9fc1ff;
+}
+
+/* Header bars */
+body.settings .view > .header,
+body.manage .view > .header,
+body.manage .header.tabbed,
+body.settings .header.tabbed {
+    background: #16244f;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
+    margin: 0 0 0.75em;
+    padding: 0.25em 0.5em;
+    color: #e6ebff;
+}
+
+body.settings .header h2,
+body.manage .header h2,
+body.settings h2.header,
+body.manage h2.header {
+    color: #e6ebff;
+    letter-spacing: 0.06em;
+    font-size: 1em;
+}
+
+body.settings h2.header,
+body.manage h2.header {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    margin: 1em 0 0.4em;
+    padding: 0 0.25em;
+    text-transform: uppercase;
+    font-size: 0.85em;
+    color: rgba(230, 235, 255, 0.75);
+}
+
+body.settings .header .user-menu .menu-title,
+body.manage .header .user-menu .menu-title {
+    color: #e6ebff;
+}
+
+/* User menu dropdown, everywhere */
+.user-menu .menu-dropdown .menu-contents {
+    background: #1d2f63;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+    color: #e6ebff;
+    overflow: hidden;
+}
+
+.user-menu .menu-dropdown .menu-contents a,
+.user-menu .menu-dropdown .menu-contents .profile,
+.user-menu .menu-dropdown .menu-contents .full-name a {
+    color: #e6ebff;
+}
+
+.user-menu .menu-dropdown .menu-contents li a:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
+.user-menu .menu-dropdown .menu-contents .action-list {
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Tabs */
+body.settings .page-tabs,
+body.manage .page-tabs {
+    background: transparent;
+    margin: 0 0 0.75em;
+}
+
+body.settings .page-tabs .page-list ul,
+body.manage .page-tabs .page-list ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35em;
+    padding: 0;
+    margin: 0;
+    background: transparent;
+    border: none;
+}
+
+body.settings .page-tabs .page-list li,
+body.manage .page-tabs .page-list li {
+    list-style: none;
+    margin: 0;
+}
+
+body.settings .page-tabs .page-list li a[href],
+body.manage .page-tabs .page-list li a[href] {
+    display: inline-block;
+    padding: 0.4em 1em;
+    border-radius: 999px;
+    background: #16244f;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(230, 235, 255, 0.8);
+    text-decoration: none;
+    font-size: 0.9em;
+}
+
+body.settings .page-tabs .page-list li a[href]:hover,
+body.manage .page-tabs .page-list li a[href]:hover {
+    background: #1d2f63;
+    color: #ffffff;
+}
+
+body.settings .page-tabs .page-list li a[href].current,
+body.manage .page-tabs .page-list li a[href].current {
+    background: #22a55b;
+    border-color: #22a55b;
+    color: #ffffff;
+    font-weight: bold;
+}
+
+/* Section cards */
+body.settings .settings.section,
+body.settings .preferences > .settings.section,
+body.manage .view > .section,
+body.manage .view > div > .section,
+body.manage .attributes,
+body.manage .connection-parameters,
+body.manage .history.section,
+body.manage .connection-permissions .section,
+body.manage .system-permissions .section,
+body.manage .related-objects .section,
+body.manage .identifier-set-editor .section,
+body.settings .preferences .attributes,
+.bg-card {
+    background: #16244f;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.3);
+    padding: 0.75em 1em;
+    margin: 0 0 0.75em;
+    color: #e6ebff;
+}
+
+body.manage .connection-permissions .header,
+body.manage .system-permissions .header,
+body.manage .related-objects .header,
+body.manage .identifier-set-editor .header {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 0 0.25em;
+    margin: 1em 0 0.4em;
+}
+
+.bg-card h2.header {
+    margin-top: 0 !important;
+    padding: 0 !important;
+}
+
+body.settings p,
+body.manage p {
+    color: rgba(230, 235, 255, 0.78);
+}
+
+/* Forms */
+body.settings input[type="text"],
+body.settings input[type="password"],
+body.settings input[type="email"],
+body.settings input[type="number"],
+body.settings input[type="date"],
+body.settings input[type="time"],
+body.settings select,
+body.settings textarea,
+body.manage input[type="text"],
+body.manage input[type="password"],
+body.manage input[type="email"],
+body.manage input[type="number"],
+body.manage input[type="date"],
+body.manage input[type="time"],
+body.manage select,
+body.manage textarea,
+body.settings .filter input,
+body.manage .filter input {
+    background: #0f1a3a;
+    color: #e6ebff;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 8px;
+    padding: 0.4em 0.6em;
+}
+
+body.settings input::placeholder,
+body.manage input::placeholder {
+    color: rgba(230, 235, 255, 0.4);
+}
+
+body.settings input:focus,
+body.settings select:focus,
+body.manage input:focus,
+body.manage select:focus,
+body.manage textarea:focus {
+    outline: none;
+    border-color: #22a55b;
+    box-shadow: 0 0 0 2px rgba(34, 165, 91, 0.3);
+}
+
+body.settings input[readonly],
+body.manage input[readonly] {
+    color: rgba(230, 235, 255, 0.65);
+    background: rgba(15, 26, 58, 0.6);
+}
+
+body.settings table.properties th,
+body.manage table.properties th,
+body.manage .form .fields .labeled-field .field-header,
+body.settings .form .fields .labeled-field .field-header {
+    color: rgba(230, 235, 255, 0.78);
+    font-weight: normal;
+}
+
+body.manage .form .form-header,
+body.settings .form .form-header {
+    color: #e6ebff;
+    font-size: 0.95em;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding-bottom: 0.3em;
+}
+
+/* Buttons */
+body.settings button,
+body.manage button,
+body.settings a.button,
+body.manage a.button,
+.notification .buttons button {
+    background: #22a55b;
+    background-image: none;
+    color: #ffffff;
+    border: none;
+    border-radius: 999px;
+    padding: 0.45em 1.2em;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+    text-shadow: none;
+    font-weight: bold;
+    text-decoration: none;
+}
+
+body.settings button:hover,
+body.manage button:hover,
+body.settings a.button:hover,
+body.manage a.button:hover,
+.notification .buttons button:hover {
+    background: #1c8a4c;
+}
+
+body.settings button:disabled,
+body.manage button:disabled {
+    background: #3a4a78;
+    color: rgba(255, 255, 255, 0.55);
+    cursor: default;
+}
+
+body.manage button.danger,
+body.manage button.delete,
+.notification .buttons button.danger {
+    background: #c0392b;
+}
+
+body.manage button.danger:hover,
+body.manage button.delete:hover,
+.notification .buttons button.danger:hover {
+    background: #a5301f;
+}
+
+body.settings button.cancel,
+body.manage button.cancel,
+body.manage button.clone,
+.notification .buttons button.cancel {
+    background: #2a3b70;
+    color: #e6ebff;
+}
+
+body.settings button.cancel:hover,
+body.manage button.cancel:hover,
+body.manage button.clone:hover,
+.notification .buttons button.cancel:hover {
+    background: #34488a;
+}
+
+/* Tables (history, sessions) */
+body.settings table,
+body.manage table {
+    color: #e6ebff;
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+body.settings table thead th,
+body.manage table thead th,
+body.settings table.sorted thead tr th,
+body.manage table.sorted thead tr th {
+    background: #1d2f63;
+    color: #e6ebff;
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+body.settings table tbody tr:nth-child(even),
+body.manage table.history tbody tr:nth-child(even) {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+body.settings table tbody td,
+body.manage table tbody td {
+    border-color: rgba(255, 255, 255, 0.07);
+}
+
+body.manage table.properties,
+body.settings table.properties,
+body.manage table.properties td,
+body.manage table.properties th {
+    background: transparent;
+    border: none;
+}
+
+/* Lists and trees (connection lists, permission trees) */
+body.settings .list-item .caption,
+body.manage .list-item .caption,
+body.settings .list-item .name,
+body.manage .list-item .name {
+    color: #e6ebff;
+}
+
+body.settings .list-item .caption:hover,
+body.manage .list-item .caption:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 8px;
+}
+
+body.settings .icon,
+body.manage .icon {
+    filter: invert(1) brightness(1.15);
+}
+
+body.settings .pager,
+body.manage .pager {
+    color: #e6ebff;
+}
+
+body.settings .pager .page-numbers .current a,
+body.settings .pager .set-page.current {
+    color: #22a55b;
+    font-weight: bold;
+}
+
+body.settings .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5em;
+    margin-bottom: 0.6em;
+}
+
+body.settings .notice,
+body.manage .notice {
+    background: rgba(242, 194, 48, 0.12);
+    border: 1px solid rgba(242, 194, 48, 0.45);
+    color: #f6dc85;
+    border-radius: 10px;
+}
+
+/* Location chooser and dropdown menus */
+body.manage .location-chooser .dropdown,
+body.manage .location-chooser .location {
+    background: #0f1a3a;
+    color: #e6ebff;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 8px;
+}
+
+/* Notifications / dialogs, everywhere */
+.notification-wrapper .notification,
+.notification {
+    background: #16244f;
+    color: #e6ebff;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 14px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    overflow: hidden;
+}
+
+.notification .title-bar {
+    background: #1d2f63;
+    color: #ffffff;
+    border: none;
+}
+
+.notification .body,
+.notification .text {
+    color: #e6ebff;
+}
+
+.notification.error .title-bar {
+    background: #8f2a20;
+}
+
+/* ------------------------------------------------------------------
+ * Settings > Servers: compact rounded rows like the home screen
+ * ------------------------------------------------------------------ */
+
+body.settings .settings.connections .connection-list,
+body.settings .settings.connections .group-list {
+    background: #101c40;
+    border-radius: 12px;
+    padding: 0.3em;
+}
+
+body.settings a.settings-connection.bg-server-row {
+    display: flex;
+    align-items: center;
+    gap: 0.55em;
+    padding: 0.45em 0.6em;
+    border-radius: 10px;
+    color: #e6ebff;
+    text-decoration: none;
+}
+
+body.settings a.settings-connection.bg-server-row:hover {
+    background: rgba(255, 255, 255, 0.07);
+}
+
+body.settings a.settings-connection.bg-server-row .name {
+    font-weight: bold;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+body.settings a.settings-connection.bg-server-row .activeUserCount {
+    font-size: 0.8em;
+    color: #7fe0a7;
+}
+
+body.settings a.settings-connection.bg-server-row.bg-focused {
+    background: rgba(242, 194, 48, 0.14);
+    outline: 2px solid #f2c230;
+}
+
+.bg-meta {
+    font-size: 0.82em;
+    color: rgba(230, 235, 255, 0.6);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.bg-meta-user::before {
+    content: "as ";
+}
+
+.bg-row-edit {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    flex: 0 0 auto;
+    border-radius: 999px;
+    background: #f2c230;
+    color: #3a2c00;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+
+/* Badges */
+.bg-badges {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 0.3em;
+}
+
+.bg-badge {
+    display: inline-block;
+    padding: 0.1em 0.6em;
+    border-radius: 999px;
+    font-size: 0.75em;
+    font-weight: bold;
+    line-height: 1.6;
+    white-space: nowrap;
+    background: #2a3b70;
+    color: #e6ebff;
+}
+
+.bg-badge-proto     { background: #2a3b70; color: #bcd0ff; }
+.bg-role-admin      { background: #6c4bd8; color: #ffffff; }
+.bg-role-user       { background: #2f6fd6; color: #ffffff; }
+.bg-role-custom     { background: #8a6d1c; color: #fff4c2; }
+.bg-mfa-on          { background: rgba(34, 165, 91, 0.2);  color: #7fe0a7; }
+.bg-mfa-pending     { background: rgba(242, 194, 48, 0.18); color: #f6dc85; }
+.bg-mfa-off         { background: rgba(192, 57, 43, 0.25); color: #ffb3a8; }
+.bg-disabled-badge  { background: rgba(255, 255, 255, 0.12); color: rgba(230, 235, 255, 0.7); }
+
+/* Avatars */
+.bg-avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: linear-gradient(135deg, #2f6fd6, #22a55b);
+    color: #ffffff;
+    font-weight: bold;
+    font-size: 1em;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+
+.bg-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.bg-avatar-lg { width: 56px;  height: 56px;  font-size: 1.5em; }
+.bg-avatar-xl { width: 96px;  height: 96px;  font-size: 2.4em; }
+
+/* ------------------------------------------------------------------
+ * Settings > Users
+ * ------------------------------------------------------------------ */
+
+.bg-user-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2em;
+    background: #101c40;
+    border-radius: 12px;
+    padding: 0.3em;
+}
+
+body.settings a.bg-user-row {
+    display: flex;
+    align-items: center;
+    gap: 0.7em;
+    padding: 0.45em 0.6em;
+    border-radius: 10px;
+    color: #e6ebff;
+    text-decoration: none;
+}
+
+body.settings a.bg-user-row:hover {
+    background: rgba(255, 255, 255, 0.07);
+}
+
+body.settings a.bg-user-row.bg-disabled {
+    opacity: 0.6;
+}
+
+.bg-user-names {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    flex: 0 1 260px;
+}
+
+.bg-user-display {
+    font-weight: bold;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.bg-user-login {
+    font-size: 0.8em;
+    color: rgba(230, 235, 255, 0.6);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.bg-assigned { min-width: 6em; }
+
+.bg-empty {
+    padding: 0.6em;
+    color: rgba(230, 235, 255, 0.6);
+}
+
+/* ------------------------------------------------------------------
+ * User editor
+ * ------------------------------------------------------------------ */
+
+.bg-role-choice {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 0.6em;
+    margin: 0.4em 0 0.6em;
+}
+
+.bg-role-option {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    column-gap: 0.6em;
+    row-gap: 0.15em;
+    align-items: center;
+    padding: 0.7em 0.9em;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: #101c40;
+    cursor: pointer;
+}
+
+.bg-role-option input { grid-row: 1 / span 2; margin: 0; }
+.bg-role-option .bg-role-title { font-weight: bold; }
+.bg-role-option .bg-role-help { grid-column: 2; font-size: 0.82em; color: rgba(230, 235, 255, 0.65); }
+.bg-role-option.selected { border-color: #22a55b; background: rgba(34, 165, 91, 0.1); }
+.bg-role-option.locked { cursor: default; opacity: 0.8; }
+
+/* Stock checkbox permission editor stays behind "Show detailed permissions" */
+body.manage .manage-user:not(.bg-show-advanced) .system-permissions {
+    display: none;
+}
+
+.bg-check {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    margin: 0.4em 0;
+    cursor: pointer;
+}
+
+.bg-check input { margin: 0; }
+
+body.settings .bg-link-button,
+body.manage .bg-link-button {
+    background: transparent;
+    color: #9fc1ff;
+    box-shadow: none;
+    padding: 0.2em 0;
+    font-weight: normal;
+    text-decoration: underline;
+}
+
+body.settings .bg-link-button:hover,
+body.manage .bg-link-button:hover {
+    background: transparent;
+    color: #c7dbff;
+}
+
+.bg-note {
+    font-size: 0.86em;
+    color: rgba(230, 235, 255, 0.68) !important;
+    margin: 0.3em 0;
+}
+
+.bg-hint {
+    font-size: 0.8em;
+    color: rgba(230, 235, 255, 0.6) !important;
+    margin: 0.2em 0 0;
+}
+
+.bg-error { color: #ffb3a8 !important; }
+.bg-ok { color: #7fe0a7 !important; }
+
+.bg-assign-note { padding: 0 0.25em; }
+
+/* The picture is shown as a picture, not as its data */
+body.manage .form.form-betterguac-avatar { display: none; }
+
+.bg-admin-avatar {
+    display: flex;
+    align-items: center;
+    gap: 1em;
+}
+
+/* ------------------------------------------------------------------
+ * Server editor
+ * ------------------------------------------------------------------ */
+
+.bg-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.6em 0.9em;
+    margin: 0.4em 0;
+}
+
+.bg-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25em;
+    min-width: 0;
+}
+
+.bg-field > span {
+    font-size: 0.85em;
+    color: rgba(230, 235, 255, 0.75);
+}
+
+.bg-field > small {
+    font-size: 0.78em;
+    color: rgba(230, 235, 255, 0.55);
+}
+
+.bg-field input,
+.bg-field select {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.bg-wide { grid-column: 1 / -1; }
+
+.bg-server-basics .bg-grid {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 1fr);
+}
+
+.bg-server-basics .bg-grid > .bg-field:not(.bg-wide):not(.bg-narrow) {
+    grid-column: span 1;
+}
+
+@media (min-width: 720px) {
+    .bg-server-basics .bg-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+    .bg-server-basics .bg-grid > .bg-field.bg-wide { grid-column: span 3; }
+    .bg-server-basics .bg-grid > .bg-field.bg-narrow { grid-column: span 1; }
+    .bg-server-basics .bg-grid > .bg-field:not(.bg-wide):not(.bg-narrow) { grid-column: span 2; }
+    .bg-server-basics .bg-grid > .bg-check.bg-wide { grid-column: 1 / -1; }
+}
+
+.bg-problems {
+    margin: 0.4em 0;
+    padding: 0.5em 0.9em 0.5em 1.8em;
+    background: rgba(242, 194, 48, 0.1);
+    border: 1px solid rgba(242, 194, 48, 0.4);
+    border-radius: 10px;
+    color: #f6dc85;
+    font-size: 0.88em;
+}
+
+/* "Show all settings" hides/shows the stock attribute and parameter forms */
+body.manage .manage-connection.bg-managed:not(.bg-show-all) > .attributes,
+body.manage .manage-connection.bg-managed:not(.bg-show-all) > h2.header:not(:last-of-type),
+body.manage .manage-connection.bg-managed:not(.bg-show-all) > .connection-parameters {
+    display: none;
+}
+
+body.manage .manage-connection.bg-managed:not(.bg-show-all) > h2.header:last-of-type {
+    display: block;
+}
+
+.bg-assign { margin-top: 1em; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 0.6em; }
+
+.bg-assign-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2em;
+    background: #101c40;
+    border-radius: 10px;
+    padding: 0.3em;
+}
+
+.bg-assign-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6em;
+    padding: 0.35em 0.5em;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.bg-assign-row:hover { background: rgba(255, 255, 255, 0.06); }
+.bg-assign-row.bg-disabled { opacity: 0.6; }
+.bg-assign-name { font-weight: bold; }
+.bg-assign-status { margin-left: auto; font-size: 0.8em; color: rgba(230, 235, 255, 0.6); }
+
+/* ------------------------------------------------------------------
+ * Preferences: profile left, MFA right
+ * ------------------------------------------------------------------ */
+
+.bg-profile-split {
+    display: grid;
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    gap: 0.75em;
+    align-items: start;
+    margin-bottom: 0.75em;
+}
+
+@media (max-width: 760px) {
+    .bg-profile-split { grid-template-columns: minmax(0, 1fr); }
+    .bg-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+.bg-avatar-edit {
+    display: flex;
+    align-items: center;
+    gap: 1em;
+    margin: 0.4em 0 0.8em;
+}
+
+.bg-avatar-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.3em;
+}
+
+.bg-btn-ghost {
+    display: inline-block;
+    padding: 0.4em 1.1em;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    color: #e6ebff;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 0.9em;
+}
+
+.bg-btn-ghost:hover { background: rgba(255, 255, 255, 0.08); }
+
+.bg-btn-ghost input[type="file"] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    overflow: hidden;
+}
+
+.bg-preview {
+    margin: 0.6em 0;
+    padding: 0.5em 0.8em;
+    border-radius: 10px;
+    background: #101c40;
+    color: #e6ebff !important;
+    font-size: 0.9em;
+}
+
+.bg-mfa-status {
+    display: flex;
+    gap: 0.8em;
+    align-items: flex-start;
+    padding: 0.8em;
+    border-radius: 12px;
+    background: #101c40;
+}
+
+.bg-mfa-status strong { display: block; font-size: 1.1em; margin-bottom: 0.2em; }
+.bg-mfa-status-on { border: 1px solid rgba(34, 165, 91, 0.5); }
+.bg-mfa-status-on .bg-mfa-icon { color: #22a55b; }
+.bg-mfa-status-on strong { color: #7fe0a7; }
+.bg-mfa-status-pending { border: 1px solid rgba(242, 194, 48, 0.45); }
+.bg-mfa-status-pending strong { color: #f6dc85; }
+.bg-mfa-status-off { border: 1px solid rgba(192, 57, 43, 0.5); }
+.bg-mfa-status-off strong { color: #ffb3a8; }
+
+.bg-steps { margin: 0.4em 0 0.8em 1.2em; padding: 0; font-size: 0.88em; color: rgba(230, 235, 255, 0.78); }
+.bg-steps li { margin: 0.2em 0; }
+
+/* Profile fields are edited in the profile card, not the stock form */
+body.settings .preferences > .attributes { display: none; }
+
+/* ------------------------------------------------------------------
+ * Home greeting
+ * ------------------------------------------------------------------ */
+
+body.home .bg-greeting {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.9em;
+    max-width: 900px;
+    box-sizing: border-box;
+    margin: 0 0 0.75em;
+    padding: 0.8em 1em;
+    background: #16244f;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
+}
+
+body.home .bg-greeting-text { flex: 1 1 auto; min-width: 0; }
+
+body.home .bg-hello {
+    margin: 0;
+    font-size: 1.5em;
+    color: #ffffff;
+    font-weight: bold;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+body.home .bg-greeting-sub {
+    margin: 0.15em 0 0;
+    font-size: 0.88em;
+    color: rgba(230, 235, 255, 0.65);
+}
+
+body.home .bg-greeting-links { display: flex; gap: 0.4em; }
+
+body.home a.bg-chip-link,
+body.home a.bg-chip-link:visited {
+    padding: 0.35em 0.9em;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #e6ebff;
+    text-decoration: none;
+    font-size: 0.85em;
+}
+
+body.home a.bg-chip-link:hover { background: rgba(255, 255, 255, 0.08); }
+
+/* Section tabs inside cards (Assigned / All servers) */
+body.manage .section-tabs ul {
+    display: flex;
+    gap: 0.35em;
+    padding: 0;
+    margin: 0.3em 0 0.5em;
+    border: none;
+    background: transparent;
+}
+
+body.manage .section-tabs li { list-style: none; }
+
+body.manage .section-tabs li a {
+    display: inline-block;
+    padding: 0.3em 0.9em;
+    border-radius: 999px;
+    background: #101c40;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: rgba(230, 235, 255, 0.8);
+    cursor: pointer;
+    font-size: 0.85em;
+}
+
+body.manage .section-tabs li a.current {
+    background: #22a55b;
+    border-color: #22a55b;
+    color: #ffffff;
+    font-weight: bold;
+}
+
+/* ------------------------------------------------------------------
+ * Settings > Servers: editable list, bulk editor, help panels
+ * ------------------------------------------------------------------ */
+
+/* The stock toolbar and tree only show behind "Show the groups view" */
+.settings.section.connections.bg-sm-active > p,
+.settings.section.connections.bg-sm-active > .toolbar,
+.settings.section.connections.bg-sm-active > .connection-list { display: none; }
+.settings.section.connections.bg-sm-active.bg-sm-classic > .toolbar,
+.settings.section.connections.bg-sm-active.bg-sm-classic > .connection-list { display: block; }
+.settings.section.connections.bg-sm-active.bg-sm-classic > .toolbar { display: flex; }
+
+.bg-server-manager { margin-bottom: 1em; color: #e6ebff; }
+.bg-server-manager h3 { font-size: 1.05em; margin: 0; font-weight: 600; }
+.bg-sm-title { display: flex; align-items: center; gap: 0.5em; margin: 0.4em 0 0.6em; }
+.bg-sm-loading, .bg-sm-help { color: rgba(230, 235, 255, 0.62); font-size: 0.9em; }
+.bg-sm-error, .bg-sm-result-bad { color: #ff9b8f; }
+
+.bg-help-btn {
+    width: 1.6em; height: 1.6em; min-width: 0; padding: 0; margin: 0;
+    border-radius: 50%; border: 1px solid rgba(255, 255, 255, 0.25);
+    background: #1d2f63; color: #bcd0ff; font-weight: 700; font-size: 0.85em;
+    line-height: 1.5em; text-align: center; cursor: pointer; box-shadow: none;
+}
+.bg-help-btn:hover, .bg-help-btn[aria-expanded="true"] { background: #2f6fd6; color: #fff; }
+.bg-help-panel {
+    background: #16244f; border: 1px solid rgba(188, 208, 255, 0.25); border-left: 3px solid #2f6fd6;
+    border-radius: 10px; padding: 0.6em 1em; margin: 0 0 0.8em; font-size: 0.9em; line-height: 1.45;
+}
+.bg-help-panel p { margin: 0.35em 0; }
+.bg-help-panel ul { margin: 0.3em 0 0.3em 1.2em; padding: 0; }
+.bg-help-panel li { margin: 0.2em 0; }
+.bg-help-panel code, .bg-sm-help code { background: #0c1530; padding: 0 0.3em; border-radius: 4px; }
+.bg-help-format {
+    background: #0c1530; color: #cfe0ff; border-radius: 8px; padding: 0.5em 0.8em; margin: 0.3em 0;
+    font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.95em; white-space: pre; overflow-x: auto;
+}
+
+.bg-sm-list { background: #101c40; border-radius: 12px; padding: 0.4em; }
+.bg-sm-head, .bg-sm-row {
+    display: grid;
+    grid-template-columns: minmax(7em, 1.3fr) 6.4em minmax(7em, 1.1fr) 4em minmax(5em, 0.8fr) minmax(5em, 0.8fr) minmax(8em, 1.4fr) minmax(6em, 1fr) 8.6em;
+    gap: 0.4em; align-items: center;
+}
+.bg-sm-head { padding: 0.2em 0.5em 0.4em; font-size: 0.78em; text-transform: uppercase; letter-spacing: 0.05em; color: rgba(230, 235, 255, 0.55); }
+.bg-sm-row { padding: 0.35em 0.5em; border-radius: 10px; border-left: 3px solid transparent; margin-bottom: 0.2em; }
+.bg-sm-row:hover { background: rgba(255, 255, 255, 0.03); }
+.bg-sm-row.bg-sm-new { border-left-color: #22a55b; }
+.bg-sm-row.bg-sm-changed { border-left-color: #2f6fd6; }
+.bg-sm-row.bg-sm-invalid, .bg-sm-row.bg-sm-failed { border-left-color: #e0564a; background: rgba(224, 86, 74, 0.08); }
+.bg-sm-row.bg-sm-deleted input, .bg-sm-row.bg-sm-deleted select { text-decoration: line-through; opacity: 0.45; }
+.bg-sm-row.bg-sm-blank { background: rgba(34, 165, 91, 0.05); border: 1px dashed rgba(34, 165, 91, 0.35); border-left-width: 3px; margin-top: 0.3em; }
+
+.bg-server-manager .bg-sm-row input,
+.bg-server-manager .bg-sm-row select {
+    width: 100%; min-width: 0; box-sizing: border-box; margin: 0;
+    background: #16244f; color: #e6ebff; border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 7px; padding: 0.35em 0.5em; font-size: 0.92em;
+}
+.bg-server-manager .bg-sm-row input:focus,
+.bg-server-manager .bg-sm-row select:focus { outline: none; border-color: #2f6fd6; box-shadow: 0 0 0 2px rgba(47, 111, 214, 0.35); }
+.bg-server-manager .bg-sm-row input::placeholder { color: rgba(230, 235, 255, 0.35); }
+
+.bg-sm-actions { display: flex; gap: 0.3em; justify-content: flex-end; align-items: center; }
+.bg-server-manager .bg-sm-actions button, .bg-sm-edit {
+    width: 1.9em; height: 1.9em; min-width: 0; padding: 0; margin: 0; border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center; box-shadow: none;
+    font-size: 1.15em; font-weight: 700; line-height: 1; cursor: pointer; border: none; text-decoration: none;
+}
+.bg-sm-edit { background: rgba(242, 194, 48, 0.15); color: #f2c230; font-size: 1em; }
+.bg-sm-edit:hover { background: #f2c230; color: #0c1530; }
+.bg-server-manager .bg-sm-actions .bg-sm-remove { background: rgba(224, 86, 74, 0.18); color: #ff7a6e; }
+.bg-server-manager .bg-sm-actions .bg-sm-remove:hover { background: #e0564a; color: #fff; }
+.bg-server-manager .bg-sm-actions .bg-sm-add { background: #22a55b; color: #fff; font-size: 1.3em; }
+.bg-server-manager .bg-sm-actions .bg-sm-add:hover { background: #2bc06c; }
+.bg-server-manager .bg-sm-actions .bg-sm-undo { width: auto; border-radius: 999px; padding: 0 0.7em; font-size: 0.8em; background: #1d2f63; color: #e6ebff; }
+.bg-sm-x-inline { color: #ff7a6e; font-weight: 700; }
+
+.bg-sm-row-note, .bg-sm-row-problems, .bg-sm-row-status { grid-column: 1 / -1; font-size: 0.82em; padding-left: 0.2em; }
+.bg-sm-row-note { color: rgba(230, 235, 255, 0.5); }
+.bg-sm-row-problems, .bg-sm-failed .bg-sm-row-status { color: #ff9b8f; }
+.bg-sm-saved .bg-sm-row-status { color: #7fe0a6; }
+
+.bg-sm-savebar { display: flex; align-items: center; gap: 0.5em; justify-content: flex-end; margin: 0.7em 0 0.3em; flex-wrap: wrap; }
+.bg-sm-summary { margin-right: auto; color: rgba(230, 235, 255, 0.62); font-size: 0.9em; }
+.bg-server-manager .bg-sm-savebar button, .bg-server-manager .bg-sm-bulk-buttons button {
+    border-radius: 999px; padding: 0.4em 1.1em; margin: 0; border: none; box-shadow: none; cursor: pointer; font-size: 0.9em;
+}
+.bg-server-manager .bg-sm-save, .bg-server-manager .bg-sm-apply { background: #22a55b; color: #fff; }
+.bg-server-manager .bg-sm-discard, .bg-server-manager .bg-sm-check, .bg-server-manager .bg-sm-bulk-clear { background: #1d2f63; color: #e6ebff; }
+.bg-server-manager button[disabled] { opacity: 0.45; cursor: default; }
+.bg-sm-result { text-align: right; font-size: 0.9em; color: #7fe0a6; margin-bottom: 0.4em; }
+.bg-sm-result.bg-sm-result-bad { color: #ff9b8f; }
+
+.bg-sm-bulk { margin-top: 1.6em; background: #101c40; border-radius: 12px; padding: 0.7em 0.9em 0.9em; }
+.bg-server-manager .bg-sm-bulk-text {
+    width: 100%; box-sizing: border-box; min-height: 7em; resize: vertical; margin: 0;
+    background: #0c1530; color: #e6ebff; border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 8px;
+    padding: 0.5em 0.7em; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.9em;
+}
+.bg-sm-bulk-buttons { display: flex; gap: 0.5em; margin-top: 0.5em; flex-wrap: wrap; }
+.bg-sm-bulk-message { margin-top: 0.5em; font-size: 0.9em; color: rgba(230, 235, 255, 0.8); }
+.bg-sm-bulk-table { width: 100%; border-collapse: collapse; margin-top: 0.6em; font-size: 0.88em; }
+.bg-sm-bulk-table th { text-align: left; font-weight: 600; color: rgba(230, 235, 255, 0.55); font-size: 0.85em; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.3em 0.5em; border-bottom: 1px solid rgba(255, 255, 255, 0.1); background: transparent; }
+.bg-sm-bulk-table td { padding: 0.35em 0.5em; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
+.bg-sm-bulk-table tr .bg-sm-bulk-result { color: #7fe0a6; }
+.bg-sm-bulk-table tr.bg-sm-bulk-update .bg-sm-bulk-result { color: #8fb6ff; }
+.bg-sm-bulk-table tr.bg-sm-bulk-bad { background: rgba(224, 86, 74, 0.1); }
+.bg-sm-bulk-table tr.bg-sm-bulk-bad .bg-sm-bulk-result { color: #ff9b8f; }
+.bg-sm-classic-toggle { margin-top: 1em; font-size: 0.85em; }
+.bg-sm-classic-toggle a { color: #8fb6ff; }
+
+@media (max-width: 900px) {
+    .bg-sm-head { display: none; }
+    .bg-sm-head, .bg-sm-row { grid-template-columns: 1fr 1fr; }
+    .bg-sm-actions { grid-column: 1 / -1; }
+}
+
+/* "?" help inside cards: the button sits in the card's top-right corner */
+.bg-card, .bg-role-card, .bg-server-basics, .bg-profile-card { position: relative; }
+.bg-card .bg-help > .bg-help-btn { position: absolute; top: 0.85em; right: 0.9em; }
+.bg-help .bg-help-panel { margin-top: 0.3em; }
+.bg-help-users { display: block; margin-bottom: 0.5em; }
+.bg-help-users .bg-help { display: flex; flex-direction: column; align-items: flex-end; }
+.bg-help-users .bg-help-panel { align-self: stretch; }
+
+/* Search and group filter above the server list */
+.bg-sm-filter { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5em; margin: 0 0 0.6em; }
+.bg-server-manager .bg-sm-search {
+    flex: 0 1 16em; margin: 0; box-sizing: border-box; background: #16244f; color: #e6ebff;
+    border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 999px; padding: 0.35em 0.9em; font-size: 0.9em;
+}
+.bg-sm-chips { display: flex; flex-wrap: wrap; gap: 0.35em; }
+.bg-server-manager .bg-chip {
+    margin: 0; min-width: 0; box-shadow: none; cursor: pointer; font-size: 0.85em;
+    border-radius: 999px; padding: 0.25em 0.8em; background: #16244f; color: #cfd9ff;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+}
+.bg-server-manager .bg-chip:hover { border-color: #2f6fd6; }
+.bg-server-manager .bg-chip.on { background: #2f6fd6; color: #fff; border-color: #2f6fd6; }
+.bg-chip-count { opacity: 0.7; margin-left: 0.2em; font-size: 0.9em; }
+.bg-server-manager .bg-chip-none { font-style: italic; }
+.bg-sm-hidden-note { flex-basis: 100%; font-size: 0.82em; color: rgba(230, 235, 255, 0.6); }
+.bg-sm-hidden-note a { color: #8fb6ff; }
+
+/* Server group tags and the user editor's group list */
+.bg-group-tag {
+    display: inline-block; padding: 0.05em 0.6em; border-radius: 999px; font-size: 0.82em;
+    background: rgba(47, 111, 214, 0.22); color: #bcd0ff; border: 1px solid rgba(47, 111, 214, 0.45);
+    margin-right: 0.25em; white-space: nowrap;
+}
+.bg-user-groups { display: inline-flex; flex-wrap: wrap; gap: 0.2em; }
+.bg-sg-list { display: flex; flex-direction: column; gap: 0.25em; margin-top: 0.4em; }
+.bg-sg-row { display: flex; align-items: center; gap: 0.6em; padding: 0.35em 0.5em; border-radius: 8px; cursor: pointer; }
+.bg-sg-row:hover { background: rgba(255, 255, 255, 0.04); }
+.bg-sg-servers { color: rgba(230, 235, 255, 0.6); font-size: 0.88em; }
+.bg-sg-single-header { font-size: 0.95em; margin: 1em 0 0; font-weight: 600; }
+.bg-group-access { margin-top: 0.6em; }
+.bg-group-access-row { margin: 0.2em 0; font-size: 0.9em; }
+.bg-muted { color: rgba(230, 235, 255, 0.5); font-style: italic; }
+.bg-groups-field .bg-hint { display: block; margin-top: 0.2em; font-size: 0.8em; color: rgba(230, 235, 255, 0.55); }
+
+/* Connection test: dots, row results, failure summary */
+.bg-dot { display: inline-block; width: 0.7em; height: 0.7em; border-radius: 50%; background: rgba(230, 235, 255, 0.25); flex: none; vertical-align: middle; }
+.bg-dot-ok { background: #22c55e; box-shadow: 0 0 6px rgba(34, 197, 94, 0.7); }
+.bg-dot-failed { background: #ef4444; box-shadow: 0 0 6px rgba(239, 68, 68, 0.7); }
+.bg-dot-error { background: #f2c230; }
+.bg-dot-stale { background: transparent; border: 2px solid rgba(230, 235, 255, 0.45); box-sizing: border-box; }
+.bg-dot-running { background: #2f6fd6; animation: bg-pulse 0.9s ease-in-out infinite alternate; }
+@keyframes bg-pulse { from { opacity: 0.35; } to { opacity: 1; } }
+
+.bg-server-manager .bg-sm-actions .bg-sm-test {
+    width: auto; border-radius: 999px; padding: 0 0.65em 0 0.5em; gap: 0.35em;
+    font-size: 0.8em; font-weight: 600; background: #1d2f63; color: #e6ebff;
+}
+.bg-server-manager .bg-sm-actions .bg-sm-test:hover { background: #2a4180; }
+.bg-sm-row-test { grid-column: 1 / -1; font-size: 0.82em; padding-left: 0.2em; color: rgba(230, 235, 255, 0.7); }
+.bg-sm-row-test.bg-test-ok { color: #7fe0a6; }
+.bg-sm-row-test.bg-test-failed { color: #ff9b8f; }
+.bg-sm-row-test.bg-test-error { color: #f2c230; }
+.bg-sm-row.bg-sm-flash { animation: bg-flash 1.6s ease-out; }
+@keyframes bg-flash { 0% { background: rgba(47, 111, 214, 0.45); } 100% { background: transparent; } }
+
+.bg-server-manager .bg-sm-test-all {
+    margin: 0 0 0 auto; border-radius: 999px; padding: 0.3em 1em; font-size: 0.85em; border: none; box-shadow: none;
+    background: #1d2f63; color: #e6ebff; cursor: pointer;
+}
+
+.bg-server-manager .bg-sm-failed-pill {
+    display: inline-flex; align-items: center; gap: 0.5em; margin: 0 0 0.8em; cursor: pointer; box-shadow: none;
+    background: rgba(239, 68, 68, 0.14); color: #ffd1cc; border: 1px solid rgba(239, 68, 68, 0.55);
+    border-radius: 999px; padding: 0.35em 0.5em 0.35em 0.8em; font-size: 0.9em; font-weight: 600;
+}
+.bg-server-manager .bg-sm-failed-pill:hover { background: rgba(239, 68, 68, 0.25); }
+.bg-sm-failed-pill-open { background: #ef4444; color: #fff; border-radius: 999px; padding: 0.1em 0.7em; font-size: 0.9em; }
+
+.bg-sm-modal-backdrop { position: fixed; inset: 0; background: rgba(5, 10, 25, 0.65); z-index: 1000; }
+.bg-sm-modal {
+    position: fixed; z-index: 1001; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    width: min(44em, calc(100vw - 2em)); max-height: calc(100vh - 3em); display: flex; flex-direction: column;
+    background: #13204a; color: #e6ebff; border: 1px solid rgba(239, 68, 68, 0.5); border-top: 4px solid #ef4444;
+    border-radius: 14px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.55); padding: 0.9em 1.1em; outline: none;
+}
+.bg-sm-modal-head { display: flex; align-items: center; gap: 0.55em; }
+.bg-sm-modal-head h3 { margin: 0; font-size: 1.1em; }
+.bg-server-manager .bg-sm-modal-close {
+    margin: 0 0 0 auto; min-width: 0; width: 1.8em; height: 1.8em; padding: 0; border-radius: 50%; border: none; box-shadow: none;
+    background: transparent; color: rgba(230, 235, 255, 0.7); font-size: 1.3em; cursor: pointer;
+}
+.bg-server-manager .bg-sm-modal-close:hover { background: rgba(255, 255, 255, 0.08); color: #fff; }
+.bg-sm-modal-sub { margin: 0.3em 0 0.6em; font-size: 0.85em; color: rgba(230, 235, 255, 0.6); }
+.bg-sm-modal .bg-sm-failed-list { list-style: none; margin: 0; padding: 0; overflow-y: auto; flex: 1 1 auto; }
+.bg-sm-modal .bg-sm-failed-list li {
+    display: flex; align-items: center; gap: 0.6em; padding: 0.5em 0.4em; border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+.bg-sm-failed-main { display: flex; flex-direction: column; gap: 0.1em; flex: 1 1 auto; min-width: 0; }
+.bg-sm-failed-name { color: #ffb4ab; font-weight: 600; text-decoration: none; }
+.bg-sm-failed-name:hover { text-decoration: underline; }
+.bg-sm-failed-target { font-family: ui-monospace, Menlo, Consolas, monospace; color: rgba(230, 235, 255, 0.75); font-size: 0.85em; }
+.bg-sm-failed-detail { color: rgba(230, 235, 255, 0.7); font-size: 0.88em; }
+.bg-sm-failed-stale { color: #f2c230; font-size: 0.82em; }
+.bg-sm-modal-foot { display: flex; gap: 0.5em; justify-content: flex-end; flex-wrap: wrap; margin-top: 0.8em; }
+.bg-server-manager .bg-sm-modal button.bg-sm-failed-one,
+.bg-server-manager .bg-sm-modal-foot button {
+    margin: 0; border-radius: 999px; padding: 0.3em 1em; font-size: 0.85em; border: none; box-shadow: none; cursor: pointer;
+    background: #1d2f63; color: #e6ebff; white-space: nowrap;
+}
+.bg-server-manager .bg-sm-modal-foot .bg-sm-retest { background: #ef4444; color: #fff; }
+
+.bg-sm-bulk-conn { white-space: normal; }
+.bg-sm-bulk-conn .bg-dot { margin-right: 0.35em; }
+.bg-sm-conn-text { font-size: 0.9em; color: rgba(230, 235, 255, 0.7); }
+
+/* Two-factor reset: My profile and the admin user editor */
+.bg-mfa-reset { margin-top: 0.8em; }
+.bg-mfa-reset-form { display: flex; flex-direction: column; gap: 0.5em; margin-top: 0.4em; }
+.bg-mfa-reset-intro, .bg-mfa-reset-lost { font-size: 0.85em; color: rgba(230, 235, 255, 0.65); margin: 0; }
+.bg-mfa-reset-error { color: #ff9b8f; font-size: 0.9em; margin: 0; }
+.bg-mfa-reset-buttons { display: flex; gap: 0.5em; }
+.bg-um-status { display: flex; gap: 0.6em; align-items: center; font-size: 0.9em; }
+.bg-badge-ok { background: rgba(34, 197, 94, 0.18); color: #7fe0a6; }
+.bg-badge-warn { background: rgba(242, 194, 48, 0.18); color: #f2c230; }
+.bg-um-confirm p { margin: 0.3em 0 0.5em; }
+.bg-um-result { font-size: 0.9em; color: #7fe0a6; }
+.bg-um-result.bg-error { color: #ff9b8f; }
+.bg-legacy-login { font-size: 0.8em; color: #f2c230; }
+
+/* Admin two-factor reset: one-time password shown once */
+.bg-um-temp { margin-top: 0.6em; padding: 0.6em 0.8em; border-radius: 10px; background: rgba(255, 210, 90, 0.08); border: 1px solid rgba(255, 210, 90, 0.35); }
+.bg-um-temp p { margin: 0.2em 0 0.4em; font-size: 0.9em; }
+.bg-um-temp-value { display: inline-block; font-size: 1.2em; letter-spacing: 0.08em; padding: 0.25em 0.6em; border-radius: 8px; background: #0b1533; color: #ffe08a; user-select: all; }
+
+/* Settings > Servers: Manage groups (delete server groups) */
+.bg-server-manager .bg-sm-manage-groups {
+    margin: 0 0 0 auto; border-radius: 999px; padding: 0.3em 1em; font-size: 0.85em; border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: none;
+    background: transparent; color: #e6ebff; cursor: pointer;
+}
+.bg-server-manager .bg-sm-manage-groups + .bg-sm-test-all { margin-left: 0.5em; }
+.bg-gm { margin: 0 0 1em; padding: 0.7em 1em; border-radius: 12px; background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.1); }
+.bg-gm h3 { margin: 0 0 0.3em; font-size: 1em; }
+.bg-gm-list { list-style: none; margin: 0.4em 0 0; padding: 0; }
+.bg-gm-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6em; padding: 0.35em 0; border-top: 1px solid rgba(255, 255, 255, 0.07); }
+.bg-gm-name { font-weight: 600; min-width: 9em; }
+.bg-gm-counts { color: rgba(230, 235, 255, 0.65); font-size: 0.9em; }
+.bg-gm-row button { margin: 0 0 0 0.3em; padding: 0.2em 0.9em; font-size: 0.85em; border-radius: 999px; box-shadow: none; border: none; cursor: pointer; }
+.bg-gm-row button.danger { background: #c0392b; color: #fff; }
+.bg-gm-row button.danger:hover { background: #a5301f; }
+.bg-gm-row button.cancel { background: #2a3a6b; color: #e6ebff; }
+.bg-gm-delete { margin-left: auto !important; }
+.bg-gm-confirm { margin-left: auto; font-size: 0.9em; }
+.bg-gm-done { color: #8fe3a5; font-size: 0.9em; }
+
+/* ------------------------------------------------------------------
+ * One-line navigation (replaces Guacamole's user drop-down menu)
+ * ------------------------------------------------------------------ */
+.user-menu.bg-user-menu-replaced {
+    float: none;
+    display: flex;
+    align-items: center;
+    margin-left: auto;
+    min-width: 0;
+    background: none;
+    border: none;
+    box-shadow: none;
+}
+
+.bg-nav {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 0.25em;
+    min-width: 0;
+    padding: 0.25em;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 999px;
+    white-space: nowrap;
+    font-size: 0.92rem;
+}
+
+.bg-nav a.bg-nav-item,
+.bg-nav a.bg-nav-item:visited {
+    padding: 0.4em 0.95em;
+    border-radius: 999px;
+    color: rgba(230, 235, 255, 0.82);
+    text-decoration: none;
+    line-height: 1.2;
+}
+
+.bg-nav a.bg-nav-item:hover { background: rgba(255, 255, 255, 0.08); color: #ffffff; }
+.bg-nav a.bg-nav-item.bg-nav-active { background: #2a3a6b; color: #ffffff; font-weight: 600; }
+
+.bg-nav a.bg-nav-user,
+.bg-nav a.bg-nav-user:visited {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45em;
+    min-width: 0;
+    margin-left: 0.3em;
+    padding: 0.15em 0.7em 0.15em 0.15em;
+    border-radius: 999px;
+    color: #ffffff;
+    text-decoration: none;
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.bg-nav a.bg-nav-user:hover { background: rgba(255, 255, 255, 0.08); }
+
+.bg-avatar-sm { width: 30px; height: 30px; font-size: 0.8em; letter-spacing: 0.02em; }
+
+.bg-nav-name {
+    max-width: 12em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-weight: 600;
+}
+
+.bg-nav button.bg-nav-logout {
+    margin: 0;
+    padding: 0.4em 0.95em;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 999px;
+    background: transparent;
+    color: #ffb3a8;
+    font-size: 1em;
+    box-shadow: none;
+    text-shadow: none;
+    cursor: pointer;
+    min-width: 0;
+}
+
+.bg-nav button.bg-nav-logout:hover { background: rgba(192, 57, 43, 0.3); color: #ffffff; }
+
+/* Settings and editor pages: header row = logo, title, then the nav */
+.view > div.header:has(.bg-nav) {
+    display: flex;
+    align-items: center;
+    gap: 0.6em;
+}
+
+.view > div.header:has(.bg-nav) > h2 { flex: 0 1 auto; min-width: 0; }
+
+/* ------------------------------------------------------------------
+ * Home page polish
+ * ------------------------------------------------------------------ */
+body.home .bg-topbar {
+    display: flex;
+    align-items: center;
+    gap: 0.75em;
+    max-width: 900px;
+    box-sizing: border-box;
+    margin: 0 0 0.9em;
+}
+
+body.home .bg-topbar .bg-topbar-brand { position: static; margin: 0; flex: 0 0 auto; }
+body.home .bg-topbar .bg-topbar-brand img { height: 48px; width: auto; display: block; }
+body.home .bg-topbar bg-nav { display: block; margin-left: auto; min-width: 0; }
+
+/* The home section header keeps its title and search; its old menu goes */
+body.home .home-view .header .user-menu { display: none !important; }
+body.home .home-view .header > .bg-brand { display: none; }
+
+body.home .bg-greeting { margin-bottom: 1em; }
+
+body.home .home-view .header {
+    max-width: 900px;
+    box-sizing: border-box;
+}
+
+body.home .home-view .header h2 {
+    font-size: 1.05em;
+    letter-spacing: 0.02em;
+    text-transform: none;
+}
+
+/* Phone: one line that scrolls sideways if it has to; names shorten first */
+@media (max-width: 720px) {
+    .bg-nav { font-size: 0.82rem; overflow-x: auto; scrollbar-width: none; max-width: 100%; }
+    .bg-nav::-webkit-scrollbar { display: none; }
+    .bg-nav a.bg-nav-item { padding: 0.4em 0.7em; }
+    .bg-nav-name { display: none; }
+    .bg-nav a.bg-nav-user { padding: 0.15em; border-left: none; margin-left: 0.1em; }
+    .bg-nav button.bg-nav-logout { padding: 0.4em 0.7em; }
+    body.home .bg-topbar { flex-wrap: wrap; gap: 0.5em; }
+    body.home .bg-topbar .bg-topbar-brand img { height: 40px; }
+    body.home .bg-topbar bg-nav { flex: 1 1 100%; margin-left: 0; }
+    body.home .bg-topbar .bg-nav { justify-content: space-between; }
+    .view > div.header:has(.bg-nav) .bg-nav { justify-content: space-between; }
+    .view > div.header:has(.bg-nav) { flex-wrap: wrap; }
+    .view > div.header:has(.bg-nav) .user-menu.bg-user-menu-replaced { flex: 1 1 100%; margin-left: 0; }
+}
+
+/* SSH key file column */
+.bg-server-manager .bg-sm-row input.bg-sm-key { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.86em; }
+.bg-server-manager .bg-sm-row input.bg-sm-key:disabled { opacity: 0.35; }
+.bg-sm-head-wide { max-width: 1240px; }

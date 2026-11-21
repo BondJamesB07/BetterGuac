@@ -1,0 +1,58 @@
+#!/bin/sh
+set -e
+
+# remove: program files go; settings, keys and the database stay.
+# purge:  the database is saved to /var/backups first, then everything goes.
+
+case "$1" in
+    remove)
+        rm -f /etc/tomcat10/Catalina/localhost/betterguac.xml /etc/tomcat10/Catalina/localhost/guacamole.xml
+        if grep -qs 'managed by the betterguac package' /etc/tomcat10/Catalina/localhost/ROOT.xml; then
+            rm -f /etc/tomcat10/Catalina/localhost/ROOT.xml
+        fi
+        ;;
+    purge)
+        rm -f /etc/tomcat10/Catalina/localhost/betterguac.xml /etc/tomcat10/Catalina/localhost/guacamole.xml
+        if grep -qs 'managed by the betterguac package' /etc/tomcat10/Catalina/localhost/ROOT.xml; then
+            rm -f /etc/tomcat10/Catalina/localhost/ROOT.xml
+        fi
+        if command -v mariadb >/dev/null 2>&1 && mariadb --protocol=socket -uroot -e 'SELECT 1' >/dev/null 2>&1; then
+            if mariadb --protocol=socket -uroot -N -B -e "SHOW DATABASES LIKE 'betterguac'" | grep -q .; then
+                stamp=$(date +%Y%m%d-%H%M%S)
+                backup=/var/backups/betterguac-purge-$stamp.sql.gz
+                (umask 077; mariadb-dump --protocol=socket -uroot --single-transaction \
+                    --databases betterguac betterguac_yamlsync 2>/dev/null | gzip > "$backup") || true
+                echo "betterguac: saved the database to $backup before removing it" >&2
+            fi
+            mariadb --protocol=socket -uroot <<'EOF' || true
+DROP DATABASE IF EXISTS betterguac;
+DROP DATABASE IF EXISTS betterguac_yamlsync;
+DROP USER IF EXISTS 'betterguac'@'localhost';
+DROP USER IF EXISTS 'betterguac_sync'@'localhost';
+FLUSH PRIVILEGES;
+EOF
+        else
+            echo "betterguac: MariaDB isn't running, so the betterguac databases were left in place" >&2
+        fi
+        rm -rf /etc/betterguac /var/lib/betterguac /var/lib/private/betterguac-guacd /var/lib/betterguac-guacd
+        if [ -d /run/systemd/system ]; then
+            deb-systemd-invoke try-restart tomcat10.service >/dev/null 2>&1 || true
+        fi
+        ;;
+    upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)
+        ;;
+    *)
+        echo "postrm called with unknown argument '$1'" >&2
+        exit 1
+        ;;
+esac
+
+#DEBHELPER#
+
+# After debhelper's daemon-reload above, Tomcat's PartOf= drop-in is gone, so
+# stopping the leftover target no longer stops Tomcat.
+if [ "$1" = remove ] && [ -d /run/systemd/system ]; then
+    deb-systemd-invoke stop betterguac.target >/dev/null 2>&1 || true
+fi
+
+exit 0

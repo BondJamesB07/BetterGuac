@@ -1,0 +1,35 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: BetterGuac
+Upstream-Contact: Robert Debs <robert@robertdebs.com>
+Source: https://guacamole.apache.org/
+Comment: BetterGuac is based on Apache Guacamole 1.6.0. The guacd source,
+ web application and the JDBC and TOTP extensions are the Apache Guacamole
+ 1.6.0 releases, with the BetterGuac changes listed in
+ /usr/share/doc/betterguac/NOTICE.
+
+Files: *
+Copyright: 2026 Robert Debs
+License: Apache-2.0
+
+Files: upstream/*
+Copyright: The Apache Software Foundation
+License: Apache-2.0
+Comment: Apache Guacamole 1.6.0. The web application bundles third-party
+ libraries under their own licenses; see the LICENSE file inside
+ /usr/share/betterguac/webapp/META-INF and /usr/share/doc/betterguac/LICENSE.
+
+License: Apache-2.0
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+ .
+ https://www.apache.org/licenses/LICENSE-2.0
+ .
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ .
+ On Debian systems, the complete text of the Apache License, Version 2.0
+ can be found in "/usr/share/common-licenses/Apache-2.0".

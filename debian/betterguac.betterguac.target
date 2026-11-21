@@ -1,0 +1,8 @@
+[Unit]
+Description=BetterGuac (web app, proxy daemon and database)
+Documentation=file:///usr/share/doc/betterguac/README.Debian
+Wants=mariadb.service betterguac-guacd.service tomcat10.service
+After=mariadb.service betterguac-guacd.service tomcat10.service
+
+[Install]
+WantedBy=multi-user.target

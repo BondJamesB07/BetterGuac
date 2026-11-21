@@ -1,0 +1,35 @@
+<meta name="before" content=".manage-user connection-permission-editor">
+<div class="section bg-card bg-user-groups-card" ng-controller="bgUserServerGroupsController"
+     ng-show="managementPermissions[dataSource].canChangePermissions">
+
+    <h2 class="header">Server groups</h2>
+    <bg-help label="About server groups">
+        <ul>
+            <li>Tick a group to let this person open every server in it, now and later. A server added to the group later is included automatically.</li>
+            <li>Ticks save right away, like the server ticks below.</li>
+            <li>Groups are made on the Servers page: type a group name in a server's Groups field.</li>
+            <li>A server can be in several groups. Being in any one of them is enough.</li>
+            <li>The single server ticks below still work for one-off access. Untick a group and the person keeps only what's ticked there.</li>
+        </ul>
+    </bg-help>
+
+    <p class="bg-note" ng-show="bgSg.isNew">Save this user first, then open them again to pick server groups.</p>
+    <p class="bg-note" ng-show="!bgSg.isNew && permissionFlags.systemPermissions.ADMINISTER">Admins can open every server anyway. Groups only matter if this person becomes a User.</p>
+    <p class="bg-note bg-error" ng-show="bgSg.error">The server groups couldn't be loaded.</p>
+    <p class="bg-note" ng-show="bgSg.loaded && !bgSg.groups.length">There are no server groups yet. Add a group name to a server on the Servers page.</p>
+
+    <div class="bg-sg-list" ng-show="!bgSg.isNew && bgSg.groups.length">
+        <label class="bg-sg-row" ng-repeat="g in bgSg.groups" data-group="{{ g.name }}">
+            <input type="checkbox" ng-model="g.member" ng-change="bgToggleGroup(g)" ng-disabled="g.saving">
+            <span class="bg-group-tag">{{ g.name }}</span>
+            <span class="bg-sg-servers">
+                {{ g.serverNames.length === 1 ? '1 server' : g.serverNames.length + ' servers' }}<span ng-show="g.serverNames.length">: {{ g.serverNames.join(', ') }}</span>
+            </span>
+            <span class="bg-assign-status" ng-show="g.saving">Saving...</span>
+            <span class="bg-assign-status bg-ok" ng-show="g.status === 'saved'">Saved</span>
+            <span class="bg-assign-status bg-error" ng-show="g.status === 'failed'">Not saved</span>
+        </label>
+    </div>
+
+    <h3 class="bg-sg-single-header" ng-show="!bgSg.isNew">Single servers</h3>
+</div>

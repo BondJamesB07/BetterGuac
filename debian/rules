@@ -1,0 +1,70 @@
+#!/usr/bin/make -f
+# BetterGuac: builds guacd from the Apache Guacamole 1.6.0 source with the
+# FreeRDP 3 post-connect fix, and assembles the web application, extensions,
+# YAML sync tool and setup scripts.
+
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+include /usr/share/dpkg/architecture.mk
+include /usr/share/dpkg/buildflags.mk
+include /usr/share/dpkg/pkg-info.mk
+
+GUACD_PREFIX := /usr/lib/betterguac/guacd
+B := $(CURDIR)/build
+SRV := $(B)/guacamole-server-1.6.0
+PKG := $(CURDIR)/debian/betterguac
+
+%:
+	dh $@
+
+override_dh_auto_clean:
+	rm -rf $(B)
+
+override_dh_auto_configure:
+	rm -rf $(B) && mkdir -p $(B)
+	tar -xzf upstream/guacamole-server-1.6.0.tar.gz -C $(B)
+	cd $(SRV) && patch -p1 < $(CURDIR)/patches/0001-rdp-gdi-init-in-postconnect.patch
+	cd $(SRV) && patch -p1 < $(CURDIR)/patches/0002-guacd-config-file-option.patch
+	cd $(SRV) && ./configure \
+		--build=$(DEB_BUILD_GNU_TYPE) --host=$(DEB_HOST_GNU_TYPE) \
+		--prefix=$(GUACD_PREFIX) \
+		--sysconfdir=/etc/betterguac \
+		--disable-static \
+		--with-guacd-conf=/etc/betterguac/guacd.conf \
+		--with-freerdp-plugin-dir=/usr/lib/$(DEB_HOST_MULTIARCH)/freerdp3 \
+		CFLAGS="$(CFLAGS) -Wno-error=deprecated-declarations" \
+		CPPFLAGS="$(CPPFLAGS)" \
+		LDFLAGS="$(LDFLAGS) -Wl,-rpath,$(GUACD_PREFIX)/lib"
+
+override_dh_auto_build:
+	$(MAKE) -C $(SRV)
+	sh debian/build-web.sh $(B) $(DEB_VERSION)
+
+override_dh_auto_test:
+
+override_dh_auto_install:
+	$(MAKE) -C $(SRV) install DESTDIR=$(PKG)
+	# headers, libtool archives and man pages of the private guacd are not needed
+	rm -rf $(PKG)$(GUACD_PREFIX)/include $(PKG)$(GUACD_PREFIX)/share
+	find $(PKG) -name '*.la' -delete
+	# guacenc/guaclog are recording tools, not needed by the service
+	rm -f $(PKG)$(GUACD_PREFIX)/bin/guacenc $(PKG)$(GUACD_PREFIX)/bin/guaclog
+	rmdir $(PKG)$(GUACD_PREFIX)/bin || true
+	sh debian/install-web.sh $(B) $(PKG)
+
+override_dh_installsystemd:
+	dh_installsystemd --name=betterguac-guacd
+	dh_installsystemd --name=betterguac --no-start
+
+override_dh_shlibdeps:
+	dh_shlibdeps -l$(PKG)$(GUACD_PREFIX)/lib
+	# libjpeg.so.62 (ABI LIBJPEG_6.2) is packaged as libjpeg62-turbo on Debian and
+	# as libjpeg62 on Ubuntu; accept either so one .deb installs on both.
+	sed -i -E 's/(libjpeg62-turbo \([^)]*\))/\1 | libjpeg62/' debian/betterguac.substvars
+	grep -q 'libjpeg62-turbo ([^)]*) | libjpeg62' debian/betterguac.substvars
+
+override_dh_makeshlibs:
+	dh_makeshlibs --no-scripts -Xfreerdp3 -X$(GUACD_PREFIX)
+
+override_dh_fixperms:
+	dh_fixperms
+	chmod 0755 $(PKG)/usr/lib/betterguac/betterguac-setup $(PKG)/usr/lib/betterguac/sync/betterguac_sync.py

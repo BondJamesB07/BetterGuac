@@ -1,0 +1,52 @@
+{
+    "guacamoleVersion": "1.6.0",
+    "name": "BetterGuac UI (server list, login, roles, user and server management, profiles)",
+    "namespace": "betterguac-ui",
+    "authProviders": [
+        "com.betterguac.profile.BetterGuacProfileAuthenticationProvider"
+    ],
+    "css": [
+        "betterguac-ui.css",
+        "betterguac-ui-pages.css",
+        "betterguac-ui-layout.css"
+    ],
+    "js": [
+        "betterguac-ui.js"
+    ],
+    "translations": [
+        "translations/en.json"
+    ],
+    "html": [
+        "patches/home-connection-row.html",
+        "patches/home-remove-recent-header.html",
+        "patches/home-remove-recent-list.html",
+        "patches/home-greeting.html",
+        "patches/home-topbar.html",
+        "patches/settings-server-row.html",
+        "patches/settings-server-manager.html",
+        "patches/settings-user-list.html",
+        "patches/manage-user-role.html",
+        "patches/manage-user-mfa.html",
+        "patches/manage-user-server-groups.html",
+        "patches/manage-user-assigned-note.html",
+        "patches/manage-user-email-hint.html",
+        "patches/manage-user-avatar.html",
+        "patches/manage-connection-basics.html",
+        "patches/preferences-profile.html",
+        "patches/brand-page-header.html",
+        "patches/brand-login.html",
+        "patches/nav-replace-user-menu.html",
+        "patches/home-server-count.html",
+        "patches/home-empty-state.html",
+        "patches/credit-login.html",
+        "patches/credit-home.html"
+    ],
+    "resources": {
+        "betterguac-logo.jpg": "image/jpeg",
+        "betterguac-icon-32.png": "image/png",
+        "betterguac-icon-64.png": "image/png",
+        "betterguac-icon-144.png": "image/png",
+        "betterguac-icon-180.png": "image/png",
+        "betterguac-icon-192.png": "image/png"
+    }
+}

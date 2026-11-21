@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- BetterGuac web application, managed by the betterguac package.
+     It is removed when the package is removed. -->
+<Context docBase="/usr/share/betterguac/webapp" />

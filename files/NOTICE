@@ -1,0 +1,23 @@
+BetterGuac
+Copyright 2026 Robert Debs
+
+Based on Apache Guacamole.
+Apache Guacamole
+Copyright 2020 The Apache Software Foundation
+
+This product includes software developed at
+The Apache Software Foundation (http://www.apache.org/).
+
+BetterGuac changes to Apache Guacamole 1.6.0 in this package:
+- guacd: FreeRDP 3 graphics (GDI) set up in the post-connect callback
+  instead of before connecting, which fixes RDP crashes with FreeRDP 3.
+- guacamole-auth-jdbc-mysql: deleting user groups works, and the sign-in
+  history table is written correctly (bytecode patch of the 1.6.0 jar).
+- Web application: BetterGuac page title and early midnight-blue page
+  colour in index.html; javax.* converted to jakarta.* for Tomcat 10.
+- BetterGuac interface add-on and profile extension (new code).
+- YAML-to-database sync tool (new code).
+
+Apache Guacamole, Guacamole and the Guacamole logo are trademarks of The
+Apache Software Foundation. BetterGuac is not endorsed by or affiliated
+with The Apache Software Foundation.

@@ -1,0 +1,9 @@
+<meta name="after" content=".home-view guac-group-list">
+<div class="bg-empty-wrap" ng-controller="bgServerCountController"><div class="bg-empty" ng-if="bgTotal() === 0">
+    <span class="bg-tile bg-tile-empty" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M4 5h16v10H4zM9 19h6M12 15v4"/></svg></span>
+    <div class="bg-empty-text">
+        <strong>No servers yet</strong>
+        <span ng-if="bgIsAdmin()">Add your first one on the <a ng-href="{{ bgServersURL() }}">Servers</a> page.</span>
+        <span ng-if="!bgIsAdmin()">Ask your administrator to give you access to a server.</span>
+    </div>
+</div></div>

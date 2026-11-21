@@ -1,0 +1,118 @@
+<meta name="before-children" content="div.preferences">
+<div class="bg-profile-split" ng-controller="bgProfileController" ng-show="user">
+
+    <!-- Left: profile -->
+    <div class="bg-card bg-profile-card">
+        <h2 class="header">{{ 'BETTERGUAC.SECTION_HEADER_PROFILE' | translate }}</h2>
+        <bg-help label="About your profile">
+            <ul>
+                <li>Your name and picture show on the home screen and in the user list.</li>
+                <li>If you set a nickname, BetterGuac greets you by it. Otherwise it uses your first name.</li>
+                <li>Pictures are cropped square and shrunk automatically.</li>
+                <li>Your email is your sign-in name. Only an admin can change it.</li>
+                <li>The two-factor panel shows whether sign-in codes are set up for your account. "Set up a new authenticator" moves it to a new phone or app: it asks for your password and a current code, then signs you out so you can scan a new QR code.</li>
+            </ul>
+        </bg-help>
+
+        <div class="bg-avatar-edit">
+            <span class="bg-avatar bg-avatar-xl">
+                <img ng-if="user.attributes['bg-avatar']" ng-src="{{ user.attributes['bg-avatar'] }}" alt="">
+                <span ng-if="!user.attributes['bg-avatar']">{{ bgInitial() }}</span>
+            </span>
+            <div class="bg-avatar-actions" ng-show="canUpdateSelf">
+                <label class="bg-btn bg-btn-ghost">
+                    <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" bg-avatar-input="bgPickAvatar($file)">
+                    {{ 'BETTERGUAC.ACTION_CHOOSE_PICTURE' | translate }}
+                </label>
+                <button type="button" class="bg-link-button" ng-show="user.attributes['bg-avatar']"
+                        ng-click="bgRemoveAvatar()">{{ 'BETTERGUAC.ACTION_REMOVE_PICTURE' | translate }}</button>
+                <p class="bg-note bg-error" ng-show="bgAvatarError">{{ bgAvatarError | translate }}</p>
+            </div>
+        </div>
+
+        <div class="bg-grid">
+            <label class="bg-field">
+                <span>{{ 'BETTERGUAC.FIELD_FIRST_NAME' | translate }}</span>
+                <input type="text" maxlength="64" ng-model="user.attributes['bg-first-name']" ng-disabled="!canUpdateSelf" autocomplete="given-name">
+            </label>
+            <label class="bg-field">
+                <span>{{ 'BETTERGUAC.FIELD_LAST_NAME' | translate }}</span>
+                <input type="text" maxlength="64" ng-model="user.attributes['bg-last-name']" ng-disabled="!canUpdateSelf" autocomplete="family-name">
+            </label>
+            <label class="bg-field bg-wide">
+                <span>{{ 'BETTERGUAC.FIELD_NICKNAME' | translate }}</span>
+                <input type="text" maxlength="64" ng-model="user.attributes['bg-nickname']" ng-disabled="!canUpdateSelf" autocomplete="nickname">
+                <small>{{ 'BETTERGUAC.HELP_NICKNAME' | translate }}</small>
+            </label>
+            <label class="bg-field bg-wide">
+                <span>{{ 'BETTERGUAC.FIELD_EMAIL' | translate }}</span>
+                <input type="text" ng-value="user.username" readonly>
+                <small ng-show="bgSignInIsEmail()">{{ 'BETTERGUAC.HELP_EMAIL_READONLY' | translate }}</small>
+                <small ng-hide="bgSignInIsEmail()">{{ 'BETTERGUAC.HELP_EMAIL_NOT_YET' | translate }}</small>
+            </label>
+        </div>
+
+        <p class="bg-preview">{{ 'BETTERGUAC.TEXT_GREETING_PREVIEW' | translate:{ NAME : bgDisplayName() } }}</p>
+        <p class="bg-note bg-error" ng-show="bgNameError()">{{ bgNameError() | translate }}</p>
+        <p class="bg-note" ng-hide="canUpdateSelf">{{ 'BETTERGUAC.HELP_PROFILE_LOCKED' | translate }}</p>
+
+        <button type="button" class="save" ng-show="canUpdateSelf" ng-disabled="bgSaving || bgNameError()"
+                ng-click="bgSaveProfile()">{{ 'BETTERGUAC.ACTION_SAVE_PROFILE' | translate }}</button>
+    </div>
+
+    <!-- Right: MFA -->
+    <div class="bg-card bg-mfa-card">
+        <h2 class="header">{{ 'BETTERGUAC.SECTION_HEADER_MFA' | translate }}</h2>
+
+        <div class="bg-mfa-status bg-mfa-status-on" ng-show="bgMfa() === 'on'">
+            <span class="bg-mfa-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="28" height="28"><path fill="currentColor" d="M12 2 4 5v6c0 5 3.4 9.7 8 11 4.6-1.3 8-6 8-11V5l-8-3zm-1.2 14.2-3.5-3.5 1.4-1.4 2.1 2.1 4.9-4.9 1.4 1.4-6.3 6.3z"/></svg></span>
+            <div>
+                <strong>{{ 'BETTERGUAC.TEXT_MFA_ENABLED' | translate }}</strong>
+                <p>{{ 'BETTERGUAC.HELP_MFA_ENABLED' | translate }}</p>
+            </div>
+        </div>
+
+        <!-- Reconfigure: password and a current code, checked on the server -->
+        <div class="bg-mfa-reset" ng-show="bgMfa() === 'on'">
+            <button type="button" class="bg-mfa-reset-open" ng-hide="bgReset.open" ng-click="bgReset.open = true; bgReset.error = null">Set up a new authenticator</button>
+            <form class="bg-mfa-reset-form" ng-show="bgReset.open" ng-submit="bgResetMfa()" autocomplete="off">
+                <p class="bg-mfa-reset-intro">Use this for a new phone or app. Confirm it's you with your password and a code from your current app. You'll then be signed out, and the sign-in screen shows a new QR code to scan.</p>
+                <label class="bg-field">
+                    <span>Current password</span>
+                    <input type="password" ng-model="bgReset.password" autocomplete="current-password" name="bg-reset-password">
+                </label>
+                <label class="bg-field">
+                    <span>Code from your current app</span>
+                    <input type="text" ng-model="bgReset.code" inputmode="numeric" autocomplete="one-time-code" maxlength="10" name="bg-reset-code">
+                </label>
+                <p class="bg-mfa-reset-error" ng-show="bgReset.error">{{ bgReset.error }}</p>
+                <div class="bg-mfa-reset-buttons">
+                    <button type="submit" class="save" ng-disabled="bgReset.busy || !bgReset.password || !bgReset.code">{{ bgReset.busy ? 'Checking...' : 'Reset and sign out' }}</button>
+                    <button type="button" class="cancel" ng-click="bgReset.open = false; bgReset.password = ''; bgReset.code = ''; bgReset.error = null">Cancel</button>
+                </div>
+                <p class="bg-mfa-reset-lost">Lost your phone? You can't sign in without a code, so ask an admin to reset two-factor sign-in for your account.</p>
+            </form>
+        </div>
+
+        <div class="bg-mfa-status bg-mfa-status-pending" ng-show="bgMfa() === 'pending'">
+            <div>
+                <strong>{{ 'BETTERGUAC.TEXT_MFA_PENDING' | translate }}</strong>
+                <p>{{ 'BETTERGUAC.HELP_MFA_PENDING' | translate }}</p>
+                <ol class="bg-steps">
+                    <li>{{ 'BETTERGUAC.STEP_MFA_1' | translate }}</li>
+                    <li>{{ 'BETTERGUAC.STEP_MFA_2' | translate }}</li>
+                    <li>{{ 'BETTERGUAC.STEP_MFA_3' | translate }}</li>
+                </ol>
+                <button type="button" class="save" ng-click="bgEnrollNow()">{{ 'BETTERGUAC.ACTION_MFA_SET_UP' | translate }}</button>
+            </div>
+        </div>
+
+        <div class="bg-mfa-status bg-mfa-status-off" ng-show="bgMfa() === 'off'">
+            <div>
+                <strong>{{ 'BETTERGUAC.TEXT_MFA_OFF' | translate }}</strong>
+                <p>{{ 'BETTERGUAC.HELP_MFA_OFF' | translate }}</p>
+            </div>
+        </div>
+    </div>
+
+</div>

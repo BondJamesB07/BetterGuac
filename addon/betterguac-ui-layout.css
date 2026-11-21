@@ -1,0 +1,615 @@
+/*
+ * BetterGuac: full-window layout and the home "Your servers" list
+ * (19 Nov 2026). Loaded last, so it wins over the older sheets.
+ *
+ *  - Every page fills the window edge to edge: the midnight-blue background
+ *    always reaches the bottom, the logo and menu bar runs full width, and
+ *    page content is centred with even side gutters that grow with the
+ *    screen. Content stops growing at a readable width on very wide monitors.
+ *  - Home: the template from Claude. One panel, rows split by thin lines,
+ *    icon tile + name + type, Connect / Resume / Disconnect / Edit on the
+ *    right. The panel grows with the window (about 58% of it).
+ */
+
+:root {
+    --bg-gutter: clamp(14px, 3.2vw, 72px);
+    --bg-content-max: 1880px;     /* settings and editor pages */
+    --bg-home-panel: clamp(880px, 58vw, 1500px);
+    --bg-panel: #16244f;
+    --bg-panel-line: rgba(255, 255, 255, 0.075);
+    --bg-tile: #1f3163;
+    --bg-tile-ink: #9cc4ff;
+    --bg-connect: #59a2ff;
+    --bg-connect-hover: #7ab5ff;
+    --bg-connect-ink: #0a1430;
+    --bg-muted: #93a3c7;
+}
+
+/* ------------------------------------------------------------------
+ * The whole window, every page
+ * ------------------------------------------------------------------ */
+html, body {
+    min-height: 100%;
+    background-color: #0c1530;
+}
+
+body {
+    min-height: 100vh;
+    min-height: 100dvh;
+    background-attachment: fixed;
+}
+
+/* Page views: full width, centred content, gutters on both sides */
+body:not(.client) .view {
+    max-width: none !important;
+    width: 100%;
+    box-sizing: border-box;
+    min-height: 100vh;
+    min-height: 100dvh;
+    margin: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+}
+
+/* Settings and editor pages: everything inside the view lines up on one
+   centred column, as wide as the window allows up to --bg-content-max */
+body:not(.client):not(.home) .view > * {
+    box-sizing: border-box;
+    width: auto;
+    max-width: min(var(--bg-content-max), calc(100% - 2 * var(--bg-gutter)));
+    margin-left: auto !important;
+    margin-right: auto !important;
+}
+
+/* The logo + menu bar spans the full window on settings / editor pages */
+body:not(.client):not(.home) .view > div.header:first-child,
+body:not(.client):not(.home) .view > .header:has(.bg-nav) {
+    max-width: none;
+    width: 100%;
+    padding-left: var(--bg-gutter);
+    padding-right: var(--bg-gutter);
+}
+
+/* Tables on the list pages use the full content width */
+body:not(.client) .settings-view table,
+body:not(.client) .settings table,
+body:not(.client) .manage-user table,
+body:not(.client) .manage-connection table,
+body:not(.client) .view .bg-sm-table {
+    width: 100%;
+}
+
+/* Form fields grow with their column instead of stopping at Guacamole's
+   fixed 16em, so wide editor cards have no empty strip beside each box */
+body:not(.client) .view .bg-field input:not([type=checkbox]):not([type=radio]),
+body:not(.client) .view .bg-field select,
+body:not(.client) .view .bg-field textarea {
+    width: 100%;
+    max-width: none;
+    box-sizing: border-box;
+}
+
+body:not(.client) .view table.properties th,
+body:not(.client) .view table.fields th {
+    width: 15em;
+    max-width: 15em;
+    white-space: normal;
+}
+
+body:not(.client) .view table.properties td input:not([type=checkbox]):not([type=radio]),
+body:not(.client) .view table.properties td select,
+body:not(.client) .view table.properties td textarea,
+body:not(.client) .view table.fields td input:not([type=checkbox]):not([type=radio]),
+body:not(.client) .view table.fields td select,
+body:not(.client) .view table.fields td textarea {
+    width: min(100%, 34em);
+    max-width: none;
+    box-sizing: border-box;
+}
+
+/* Time zone pickers sit side by side */
+body:not(.client) .view td select.time-zone-region { width: min(48%, 16em); }
+body:not(.client) .view td select.time-zone { width: min(50%, 18em); }
+
+/* Long tick lists (servers / groups / members) flow into columns on wide screens */
+@media (min-width: 1200px) {
+    body:not(.client) .view .bg-assign-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        align-content: start;
+        column-gap: 0.5em;
+    }
+}
+
+/* Phone: wide tables (bulk preview, a server's sign-in history) scroll
+   sideways inside their box instead of pushing the whole page wider */
+@media (max-width: 720px) {
+    body:not(.client) .view .history.section,
+    body:not(.client) .view .bg-sm-bulk-preview,
+    body:not(.client) .view :has(> table.bg-sm-bulk-table) {
+        overflow-x: auto;
+        max-width: 100%;
+        -webkit-overflow-scrolling: touch;
+    }
+}
+
+/* Large monitors: a touch larger type so the wider pages stay balanced */
+@media (min-width: 2200px) {
+    body:not(.client) { font-size: 17px; }
+}
+
+/* ------------------------------------------------------------------
+ * Home page
+ * ------------------------------------------------------------------ */
+body.home .home-view,
+body.home .home-view .connection-list-ui {
+    padding: 0 !important;
+    margin: 0 !important;
+}
+body.home .home-view .connection-list-ui { padding-bottom: 3em !important; }
+
+/* Logo and menu: a full-width bar */
+body.home .bg-topbar {
+    max-width: none !important;
+    width: 100%;
+    box-sizing: border-box;
+    margin: 0 0 clamp(1.2em, 3vh, 2.6em) !important;
+    padding: 0.7em var(--bg-gutter);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(8, 15, 36, 0.35);
+}
+
+/* Greeting, panel header and list share one centred column */
+body.home .bg-greeting,
+body.home .connection-list-ui > .header,
+body.home .connection-list-ui > .all-connections {
+    width: min(var(--bg-home-panel), calc(100% - 2 * var(--bg-gutter)));
+    max-width: none !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    box-sizing: border-box;
+}
+
+/* Greeting: avatar, "Welcome back, Robert", and a quiet line under it */
+body.home .bg-greeting {
+    background: none;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+    margin-bottom: 1.4em !important;
+    gap: 1em;
+    flex-wrap: nowrap;
+}
+
+body.home .bg-greeting .bg-avatar-lg {
+    width: 56px; height: 56px;
+    flex: 0 0 auto;
+    background: var(--bg-tile);
+    color: var(--bg-tile-ink);
+    font-weight: 700;
+}
+
+body.home .bg-hello {
+    margin: 0;
+    font-size: 1.45em;
+    font-weight: 700;
+    line-height: 1.2;
+    color: #fff;
+    overflow-wrap: anywhere;
+}
+
+body.home .bg-greeting-sub {
+    margin: 0.2em 0 0;
+    color: var(--bg-muted);
+    font-size: 0.95em;
+}
+
+/* Greeting at first paint, before the profile arrives: the text column always
+   holds the same 2.5em box, whether it shows the skeleton or the real two
+   lines (name at 1.45em + gap + sub line at 0.95em), so the greeting row and
+   list below never move when the name and picture fill in. The skeleton is
+   sized like the text it stands in for. */
+body.home .bg-greeting-text {
+    height: 2.5em;
+    box-sizing: border-box;
+}
+body.home .bg-greeting-copy {
+    height: 100%;
+    box-sizing: border-box;
+}
+body.home .bg-skeleton {
+    padding-top: 0.05em;
+}
+body.home .bg-skeleton-line {
+    display: block;
+    height: 1.45em;
+    border-radius: 6px;
+    background: rgba(230, 235, 255, 0.13);
+}
+body.home .bg-skeleton-line + .bg-skeleton-line {
+    margin-top: 0.2em;
+    height: 0.95em;
+}
+body.home .bg-skeleton-line.bg-skeleton-name { width: 11em; max-width: 60%; }
+body.home .bg-skeleton-line.bg-skeleton-sub  { width: 7em; max-width: 40%; }
+
+/* Home page while it waits for the server list: a flat avocado silhouette with
+   a steady, machine-timed double beat ("lub-dub"). The upstream home view's
+   loading state (app/index/styles/loading.css, the grey spinning cog on
+   .loading::before) is never seen on the way in - the view is not in the DOM
+   until its data is ready - so the same look also covers that empty window
+   (betterguac-ui.js adds .bg-loading to the body until the view arrives). */
+body.home .home-view.loading::before { display: none; }
+
+body .bg-loading-text {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+body .bg-loading {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3em 1em;
+}
+
+body .bg-avocado {
+    display: block;
+    width: clamp(56px, 8vh, 72px);
+    height: auto;
+    overflow: visible;
+    transform-origin: 50% 50%;
+    animation: bg-avocado-beat 1.8s cubic-bezier(0.25, 0.1, 0.25, 1) infinite;
+}
+body .bg-avocado-skin  { fill: #2f5d38; }
+body .bg-avocado-flesh { fill: #c9d58a; }
+body .bg-avocado-pit {
+    fill: #c9a227;
+    animation: bg-avocado-pit-glow 1.8s linear infinite;
+}
+
+/* Lub-dub, then rest: 0-10% first beat, 18-28% second, quiet until 100% */
+@keyframes bg-avocado-beat {
+    0%, 28%, 100% { transform: scale(1); }
+    10%           { transform: scale(1.06); }
+    18%           { transform: scale(1); }
+    24%           { transform: scale(1.045); }
+}
+@keyframes bg-avocado-pit-glow {
+    0%, 30%, 100% { fill: #c9a227; filter: none; }
+    10%           { fill: #f2d27a; filter: drop-shadow(0 0 3px rgba(242, 210, 122, 0.9)); }
+    18%           { fill: #c9a227; filter: none; }
+    24%           { fill: #e8c25a; filter: drop-shadow(0 0 2px rgba(242, 210, 122, 0.7)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body .bg-avocado,
+    body .bg-avocado-pit { animation: none; }
+}
+
+/* Panel header: "Your servers" on the left, the count on the right.
+   The list panel's border is reserved from first paint (when the list is
+   still loading) so the first row does not move when the panel appears. */
+body.home .connection-list-ui > .all-connections {
+    box-sizing: border-box;
+    border-top: 1px solid var(--bg-panel-line);
+    border-left: 1px solid var(--bg-panel-line);
+    border-right: 1px solid var(--bg-panel-line);
+}
+body.home .connection-list-ui > .header {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5em 1em;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    padding: 1em 1.25em 0.9em;
+    background: var(--bg-panel);
+    border: 1px solid var(--bg-panel-line);
+    border-bottom: 1px solid var(--bg-panel-line);
+    border-radius: 16px 16px 0 0;
+}
+
+body.home .connection-list-ui > .header h2 {
+    order: 1;
+    flex: 1 1 auto;
+    margin: 0;
+    padding: 0;
+    font-size: 1.05em;
+    /* fixed line box: the web font (Carlito) arrives a moment after first
+       paint and would otherwise make the header taller, pushing the list
+       down with it */
+    line-height: 1.3em;
+    font-weight: 700;
+    color: #fff;
+    text-transform: none;
+    letter-spacing: 0;
+}
+
+body.home .connection-list-ui > .header .bg-count {
+    order: 2;
+    color: var(--bg-muted);
+    font-size: 0.92em;
+    line-height: 1.3em;
+    white-space: nowrap;
+}
+
+/* Search stays for long lists, on its own line inside the panel header */
+body.home .connection-list-ui > .header .filter {
+    order: 3;
+    flex: 1 0 100%;
+    margin: 0.2em 0 0;
+    max-width: none;
+}
+body.home .connection-list-ui > .header:not(:has(.bg-count.bg-has-search)) .filter { display: none; }
+body.home .connection-list-ui > .header .filter input {
+    width: 100%;
+    box-sizing: border-box;
+    background: #0f1a3a;
+    border: 1px solid var(--bg-panel-line);
+    border-radius: 10px;
+    color: #e8eefc;
+    padding: 0.55em 0.8em;
+}
+
+/* The list itself: the rest of the panel */
+body.home .connection-list-ui > .all-connections {
+    margin-top: 0 !important;
+    padding: 0;
+    background: var(--bg-panel);
+    border: 1px solid var(--bg-panel-line);
+    border-top: none;
+    border-radius: 0 0 16px 16px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.28);
+    overflow: hidden;
+}
+
+body.home .all-connections .list-item,
+body.home .all-connections .connection,
+body.home .all-connections .group-list-page,
+body.home .all-connections .children,
+body.home .all-connections guac-group-list,
+body.home .all-connections .group-list,
+body.home .all-connections .connection-group {
+    margin: 0;
+    padding: 0;
+    background: none;
+    border: none;
+}
+
+/* Folders (connection groups) keep a small heading row */
+body.home .all-connections .connection-group > .caption {
+    padding: 0.6em 1.25em;
+    color: var(--bg-muted);
+    border-top: 1px solid var(--bg-panel-line);
+}
+
+/* One row: tile | name + type | buttons */
+body.home .bg-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.6em 1em;
+    padding: 0.95em 1.25em;
+    border-top: 1px solid var(--bg-panel-line);
+    background: none;
+    border-radius: 0;
+    box-shadow: none;
+    margin: 0;
+    transition: background-color 0.12s;
+}
+
+body.home .all-connections .bg-row:hover { background: rgba(255, 255, 255, 0.025); }
+
+/* The first row sits right under the header line: no second line */
+body.home .all-connections .list-item:first-child > .connection > .bg-row,
+body.home .all-connections .connection:first-child .bg-row,
+body.home .all-connections .group-list-page > :first-child .bg-row {
+    border-top: none;
+}
+
+body.home .bg-row a.bg-name {
+    display: flex;
+    align-items: center;
+    gap: 0.95em;
+    flex: 1 1 14em;
+    min-width: 0;
+    padding: 0;
+    color: inherit;
+    text-decoration: none;
+    background: none;
+}
+
+body.home .bg-tile {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: var(--bg-tile);
+    color: var(--bg-tile-ink);
+}
+
+body.home .bg-name-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+body.home .bg-name-line {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    min-width: 0;
+}
+
+body.home .bg-row .name {
+    font-weight: 700;
+    font-size: 1.02em;
+    color: #fff;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+}
+
+body.home .bg-type {
+    margin-top: 0.15em;
+    color: var(--bg-muted);
+    font-size: 0.88em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+body.home .bg-type .activeUserCount {
+    margin-left: 0.5em;
+    color: var(--bg-muted);
+    opacity: 0.85;
+}
+
+body.home .bg-open-tag {
+    flex: 0 0 auto;
+    font-size: 0.72em;
+    font-weight: 700;
+    line-height: 1;
+    padding: 0.3em 0.55em;
+    border-radius: 999px;
+    background: rgba(89, 162, 255, 0.16);
+    color: #9cc4ff;
+    text-transform: lowercase;
+}
+
+/* Buttons on the right */
+body.home .bg-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    margin-left: auto;
+    flex: 0 0 auto;
+}
+
+body.home .bg-actions .bg-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4em;
+    height: 38px;
+    min-width: 0;
+    margin: 0;
+    padding: 0 1.15em;
+    border: none;
+    border-radius: 10px;
+    font: inherit;
+    font-size: 0.92em;
+    font-weight: 600;
+    line-height: 1;
+    white-space: nowrap;
+    text-decoration: none;
+    cursor: pointer;
+    box-shadow: none;
+    box-sizing: border-box;
+}
+
+body.home .bg-actions .bg-connect,
+body.home .bg-actions .bg-resume {
+    background: var(--bg-connect);
+    color: var(--bg-connect-ink);
+}
+body.home .bg-actions .bg-connect:hover,
+body.home .bg-actions .bg-resume:hover { background: var(--bg-connect-hover); }
+
+body.home .bg-actions .bg-end {
+    background: rgba(255, 120, 120, 0.12);
+    color: #ffb4b4;
+    border: 1px solid rgba(255, 140, 140, 0.28);
+}
+body.home .bg-actions .bg-end:hover { background: rgba(255, 120, 120, 0.22); }
+
+body.home .bg-actions .bg-edit {
+    width: 38px;
+    padding: 0;
+    background: var(--bg-tile);
+    color: #c9d5f0;
+}
+body.home .bg-actions .bg-edit:hover { background: #29407c; color: #fff; }
+
+body.home .bg-actions .bg-btn:focus-visible {
+    outline: 2px solid #9cc4ff;
+    outline-offset: 2px;
+}
+
+body.home .bg-actions .bg-btn[disabled] { opacity: 0.6; cursor: default; }
+
+/* Empty state, inside the same panel */
+body.home .bg-empty {
+    display: flex;
+    align-items: center;
+    gap: 1em;
+    padding: 1.4em 1.25em;
+}
+body.home .bg-empty-text { display: flex; flex-direction: column; gap: 0.2em; color: var(--bg-muted); }
+body.home .bg-empty-text strong { color: #fff; }
+body.home .bg-empty-text a { color: #9cc4ff; }
+
+/* Wide screens: rows get a little more room */
+@media (min-width: 1800px) {
+    body.home .bg-row { padding: 1.05em 1.5em; }
+    body.home .connection-list-ui > .header { padding-left: 1.5em; padding-right: 1.5em; }
+    body.home .bg-tile { width: 48px; height: 48px; }
+}
+
+/* ------------------------------------------------------------------
+ * Phone
+ * ------------------------------------------------------------------ */
+@media (max-width: 720px) {
+    body.home .bg-topbar { padding: 0.55em var(--bg-gutter); margin-bottom: 1em !important; }
+
+    body.home .bg-greeting,
+    body.home .connection-list-ui > .header,
+    body.home .connection-list-ui > .all-connections {
+        width: calc(100% - 2 * var(--bg-gutter));
+    }
+
+    body.home .bg-greeting .bg-avatar-lg { width: 48px; height: 48px; }
+    body.home .bg-hello { font-size: 1.25em; }
+
+    body.home .connection-list-ui > .header { padding: 0.85em 1em 0.8em; }
+    body.home .bg-row { padding: 0.85em 1em; gap: 0.6em 0.75em; }
+    body.home .bg-tile { width: 40px; height: 40px; border-radius: 11px; }
+    body.home .bg-row a.bg-name { flex-basis: 12em; }
+}
+
+/* Narrow rows: the name keeps its full width, and when the buttons no
+   longer fit beside it they wrap onto their own line under the name text
+   (the row controller adds .bg-wrapped when that happens) */
+@media (max-width: 720px) {
+    body.home .bg-row a.bg-name { flex: 1 1 auto; }
+    body.home .bg-row.bg-wrapped .bg-actions {
+        flex: 1 1 100%;
+        margin-left: calc(40px + 0.95em);
+    }
+    body.home .bg-row.bg-wrapped .bg-actions .bg-connect,
+    body.home .bg-row.bg-wrapped .bg-actions .bg-resume,
+    body.home .bg-row.bg-wrapped .bg-actions .bg-end {
+        flex: 1 1 0;
+        padding: 0 0.8em;
+    }
+    body.home .bg-actions .bg-btn { height: 36px; }
+    body.home .bg-actions .bg-edit { width: 36px; flex: 0 0 auto; }
+}

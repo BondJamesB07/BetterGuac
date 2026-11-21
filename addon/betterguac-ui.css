@@ -1,0 +1,388 @@
+/*
+ * BetterGuac UI: midnight-blue theme on every page (home, login, settings,
+ * management, preferences), compact rounded server and user lists.
+ */
+
+body.home {
+    background: #0c1530;
+    background-image: linear-gradient(180deg, #111d42 0%, #0a1229 100%);
+    background-attachment: fixed;
+    color: #e6ebff;
+    min-height: 100vh;
+}
+
+body.home .home-view .connection-list-ui {
+    padding: 0.75em 0.75em 2em;
+}
+
+/* Header bar (title, filter, user menu) */
+body.home .home-view .header {
+    background: #16244f;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
+    margin: 0 0 0.75em;
+    padding: 0.25em 0.5em;
+    color: #e6ebff;
+}
+
+body.home .home-view .header h2 {
+    color: #e6ebff;
+    letter-spacing: 0.06em;
+    font-size: 1em;
+}
+
+body.home .home-view .header .filter input {
+    background: #0e1838;
+    color: #e6ebff;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 999px;
+    padding: 0.35em 0.9em;
+}
+
+body.home .home-view .header .filter input::placeholder {
+    color: rgba(230, 235, 255, 0.5);
+}
+
+/* User menu button text on the dark header (dropdown itself stays light) */
+body.home .home-view .header .user-menu .menu-title {
+    color: #e6ebff;
+}
+
+body.home .home-view .header .user-menu .menu-dropdown .menu-contents {
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+body.home .home-view .header .user-menu .menu-dropdown .menu-contents,
+body.home .home-view .header .user-menu .menu-dropdown .menu-contents a {
+    color: #1a1f33;
+}
+
+/* Home server list: see betterguac-ui-layout.css */
+
+/* Betterguac logo, top left of every page header (not on the remote-session
+ * page, so the session viewport keeps all its space) */
+.header > a.bg-brand {
+    display: inline-flex;
+    align-items: center;
+    flex: 0 0 auto;
+    align-self: center;
+    margin: 0.25em 0.5em 0.25em 0.25em;
+    padding: 0;
+    line-height: 0;
+    text-decoration: none;
+}
+
+.bg-brand img {
+    display: block;
+    height: 64px;
+    width: auto;
+    border-radius: 10px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+}
+
+body.client .bg-brand {
+    display: none;
+}
+
+/*
+ * Login and two-factor pages: midnight-blue page, dark rounded card that
+ * matches the home screen, BetterGuac logo in place of the Guacamole one.
+ * Visual only: the form, its fields and the login logic are stock.
+ */
+div.login-ui {
+    background: #0c1530;
+    background-image: linear-gradient(180deg, #111d42 0%, #0a1229 100%);
+    color: #e6ebff;
+}
+
+.login-ui .login-dialog-middle {
+    padding: 1em 0.75em;
+}
+
+.login-ui .login-dialog,
+.login-ui.continuation .login-dialog {
+    background: #16244f;
+    color: #e6ebff;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
+    padding: 1.25em;
+}
+
+.login-ui .login-dialog {
+    max-width: 3.25in;
+}
+
+.login-ui.continuation .login-dialog {
+    max-width: 4.5in;
+}
+
+/* Logo (the logo carries the BetterGuac name, so the stock
+ * "Apache Guacamole" title and version badge are hidden) */
+.login-ui .bg-login-logo {
+    text-align: center;
+    line-height: 0;
+    margin: 0 0 1em;
+}
+
+.login-ui .bg-login-logo img {
+    display: inline-block;
+    height: 128px;
+    width: auto;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.login-ui.continuation .bg-login-logo img {
+    height: 80px;
+    border-radius: 10px;
+}
+
+.login-ui .login-dialog .version {
+    display: none;
+}
+
+.login-ui .login-dialog p {
+    color: rgba(230, 235, 255, 0.85);
+}
+
+/* Fields: card-coloured with a light border while empty (so the stock
+ * floating label shows through), darker once focused or filled */
+.login-ui .login-dialog .login-fields input {
+    background: #0e1838;
+    color: #e6ebff;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 8px;
+    padding: 0.55em 0.8em;
+}
+
+.login-ui .login-fields .labeled-field.empty input {
+    background: transparent;
+}
+
+.login-ui .login-fields .labeled-field input:focus,
+.login-ui .login-dialog .login-fields input:focus {
+    background: #0e1838;
+    border-color: #6f8fe8;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(111, 143, 232, 0.35);
+}
+
+/* Keep the label visible in an empty field even while it has focus */
+.login-ui .login-fields .labeled-field.empty input:focus {
+    background: transparent;
+}
+
+.login-ui .login-dialog .login-fields input::placeholder {
+    color: rgba(230, 235, 255, 0.5);
+}
+
+.login-ui .login-fields .labeled-field .field-header {
+    color: #e6ebff;
+    opacity: 0.55;
+}
+
+/* Login / Continue button */
+.login-ui .login-dialog .buttons input[type="submit"] {
+    background: #22a55b;
+    background-image: none;
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    padding: 0.55em 1.25em;
+    font-weight: bold;
+    text-shadow: none;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+    cursor: pointer;
+}
+
+.login-ui .login-dialog .buttons input[type="submit"]:hover {
+    background: #27bd68;
+}
+
+.login-ui .login-dialog .buttons input[type="submit"]:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
+/* Login error banner */
+.login-ui.error p.login-error {
+    background: #3a1622;
+    border: 1px solid #d64545;
+    border-radius: 10px;
+    color: #ffd6d6;
+    margin: 0.75em;
+}
+
+/* Two-factor setup: keep the QR code on white so phones can scan it */
+.login-ui .totp-qr-code img {
+    background: #ffffff;
+    padding: 8px;
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.login-ui h3.totp-details-header {
+    color: #e6ebff;
+}
+
+.login-ui .totp-hide-details,
+.login-ui .totp-show-details {
+    color: #8fb3ff;
+}
+
+.login-ui .login-dialog th {
+    text-shadow: none;
+    color: rgba(230, 235, 255, 0.75);
+}
+
+.login-ui .totp-details td {
+    color: #e6ebff;
+}
+
+
+/*
+ * No white between screens: stock Guacamole paints the page, the login
+ * screen and the "logged out" / "log back in" screens white, and fades each
+ * screen in over that. The page itself is midnight blue now, so sign-in,
+ * sign-out and the two-factor steps change without a white flash. The remote
+ * session screen keeps its own black background (body.client).
+ */
+html,
+body {
+    background-color: #0c1530;
+}
+
+body:not(.client) {
+    color: #e6ebff;
+}
+
+.logged-out-modal guac-modal,
+.automatic-login-rejected-modal guac-modal,
+.fatal-page-error-modal guac-modal {
+    background: #0c1530;
+    background-image: linear-gradient(180deg, #111d42 0%, #0a1229 100%);
+}
+
+.global-status-modal guac-modal {
+    background: rgba(6, 11, 28, 0.7);
+}
+
+.logged-out-modal .notification,
+.automatic-login-rejected-modal .notification,
+.fatal-page-error-modal .fatal-page-error,
+.global-status-modal .notification {
+    background: #16244f;
+    color: #e6ebff;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
+}
+
+.global-status-modal .notification.error {
+    background: #3a1730;
+}
+
+.logged-out-modal .notification,
+.automatic-login-rejected-modal .notification {
+    padding: 1.25em;
+    box-sizing: border-box;
+    max-width: 3.25in;
+    width: calc(100% - 1.5em);
+}
+
+.fatal-page-error-modal .fatal-page-error {
+    padding: 1.25em;
+}
+
+/* The BetterGuac logo on the "logged out" and "log back in" cards */
+.logged-out-modal .notification::before,
+.automatic-login-rejected-modal .notification::before {
+    content: "";
+    display: block;
+    height: 96px;
+    margin: 0 auto 0.75em;
+    background: url("app/ext/betterguac-ui/betterguac-logo.jpg") center / contain no-repeat;
+    border-radius: 12px;
+}
+
+.logged-out-modal .notification p,
+.automatic-login-rejected-modal .notification p {
+    color: #e6ebff;
+    margin: 0.4em 0;
+}
+
+.global-status-modal .notification .title-bar {
+    background: rgba(255, 255, 255, 0.04);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: none;
+    border-radius: 14px 14px 0 0;
+    color: #e6ebff;
+}
+
+.logged-out-modal .notification button,
+.automatic-login-rejected-modal .notification button {
+    background: #22a55b;
+    color: #fff;
+    border: none;
+    border-radius: 999px;
+    padding: 0.5em 1.6em;
+    box-shadow: none;
+    text-shadow: none;
+    cursor: pointer;
+}
+
+.logged-out-modal .notification button:hover,
+.automatic-login-rejected-modal .notification button:hover {
+    background: #1d8f4e;
+}
+
+.logged-out-modal .notification button:disabled,
+.automatic-login-rejected-modal .notification button:disabled {
+    background: #2e5a42;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+@media (max-height: 520px) {
+    .logged-out-modal .notification::before,
+    .automatic-login-rejected-modal .notification::before {
+        height: 56px;
+    }
+}
+
+
+/* Credit line, bottom right of the sign-in and home pages: "BetterGuac is
+   based on Apache Guacamole" (Apache License 2.0) plus a separate thanks to
+   Sesame for the AI tools used to build it. Quiet grey, small but readable,
+   never over a control; the pages leave room for it. The wording, links and
+   NOTICE/LICENSE files are unchanged. */
+.bg-credit {
+    position: fixed;
+    right: 8px;
+    bottom: 4px;
+    z-index: 2;
+    margin: 0;
+    padding: 0;
+    max-width: calc(100vw - 16px);
+    text-align: right;
+    font-size: 11px;
+    line-height: 1.4;
+    color: #8a93a6;
+    background: none;
+}
+.bg-credit a, .bg-credit a:visited { color: #8a93a6; text-decoration: none; }
+.bg-credit a:hover, .bg-credit a:focus { color: #a7b0c4; text-decoration: underline; }
+.bg-credit a:focus-visible { outline: 1px dotted #8a93a6; outline-offset: 2px; }
+.bg-credit-tool::before { content: "\00a0\00a0·\00a0\00a0"; color: #6f7890; }
+
+/* Keep the credit off the form / list: a little more room at the bottom */
+.login-ui .login-dialog-middle { padding-bottom: 2.2em; }
+body.home .connection-list-ui { padding-bottom: 4em !important; }
+@media (max-width: 520px) {
+    .bg-credit { font-size: 10.5px; right: 6px; bottom: 3px; max-width: calc(100vw - 12px); }
+    .bg-credit .bg-credit-tool::before { content: " "; }
+    .bg-credit .bg-credit-tool { display: block; }
+}

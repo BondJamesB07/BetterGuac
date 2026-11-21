@@ -1,0 +1,28 @@
+[Unit]
+Description=BetterGuac proxy daemon (guacd)
+Documentation=file:///usr/share/doc/betterguac/README.Debian
+After=network.target
+PartOf=betterguac.target
+ConditionPathExists=/etc/betterguac/guacd.conf
+
+[Service]
+Type=simple
+ExecStart=/usr/lib/betterguac/guacd/sbin/guacd -f -c /etc/betterguac/guacd.conf
+DynamicUser=yes
+StateDirectory=betterguac-guacd
+Environment=HOME=/var/lib/betterguac-guacd
+WorkingDirectory=/var/lib/betterguac-guacd
+Restart=on-failure
+RestartSec=2
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+
+[Install]
+WantedBy=multi-user.target betterguac.target

@@ -1,0 +1,52 @@
+BetterGuac for Debian
+=====================
+
+Sign in
+-------
+Open http://<this machine>:8080/betterguac/ (or just http://<this machine>:8080/) and sign in as the first
+administrator. If you didn't type a password during installation, it is in
+/etc/betterguac/initial-admin.txt (root only):
+
+    sudo cat /etc/betterguac/initial-admin.txt
+
+This first account is a setup administrator: it signs in with the password only
+and is not asked to enroll two-factor. Create your real administrator accounts
+with it, then disable it or keep it as a break-glass account, and delete
+initial-admin.txt. The full documentation is in
+/usr/share/doc/betterguac/README.md.
+
+Forgot the password:  sudo betterguac-admin reset-password <username>
+
+Where things are
+----------------
+/etc/betterguac/guacamole.properties  web app settings and database login (root:tomcat 640)
+/etc/betterguac/guacd.conf            guacd settings
+/etc/betterguac/keys/                 SSH private keys, given to servers by path
+                                      (each key: owner root, group tomcat, mode 640)
+/etc/betterguac/betterguac.yaml       YAML servers and users (starter file)
+/etc/betterguac/sync.env         database login for the YAML sync (root only)
+/usr/share/betterguac/                web application, extensions, schema, examples
+/usr/lib/betterguac/guacd/            guacd and its protocol plugins
+
+Services: betterguac-guacd, tomcat10, mariadb.
+Logs:     journalctl -u betterguac-guacd, journalctl -u tomcat10,
+          /var/log/tomcat10/
+Status:   sudo betterguac-admin status
+
+Adding an SSH key
+-----------------
+    sudo install -o root -g tomcat -m 640 mykey /etc/betterguac/keys/web-01
+
+Then use /etc/betterguac/keys/web-01 as the server's key file.
+
+Removing
+--------
+sudo apt remove betterguac   removes the program; settings, keys and the
+                             database stay for a later reinstall.
+sudo apt purge betterguac    also removes /etc/betterguac (keys included)
+                             and the betterguac databases. A copy of the
+                             database is saved first in
+                             /var/backups/betterguac-purge-<date>.sql.gz.
+
+Tomcat, MariaDB and the Java runtime stay installed; remove them with
+"sudo apt autoremove" if nothing else uses them.

@@ -1,0 +1,30 @@
+#!/bin/sh
+set -e
+
+case "$1" in
+    configure)
+        . /usr/share/debconf/confmodule
+        BETTERGUAC_ADMIN_EMAIL=""
+        BETTERGUAC_ADMIN_PASSWORD=""
+        if db_get betterguac/admin-email; then BETTERGUAC_ADMIN_EMAIL="$RET"; fi
+        if db_get betterguac/admin-password; then BETTERGUAC_ADMIN_PASSWORD="$RET"; fi
+        export BETTERGUAC_ADMIN_EMAIL BETTERGUAC_ADMIN_PASSWORD
+        # keep debconf's stdout free for its protocol
+        /usr/lib/betterguac/betterguac-setup configure >&2
+        # never keep the typed password in the debconf database
+        db_set betterguac/admin-password "" || true
+        db_fset betterguac/admin-password seen true || true
+        unset BETTERGUAC_ADMIN_PASSWORD
+        db_stop
+        ;;
+    abort-upgrade|abort-remove|abort-deconfigure)
+        ;;
+    *)
+        echo "postinst called with unknown argument '$1'" >&2
+        exit 1
+        ;;
+esac
+
+#DEBHELPER#
+
+exit 0

@@ -1,0 +1,18 @@
+<meta name="replace" content="a.settings-connection">
+<a ng-href="{{ bgEditURL() }}"
+   ng-controller="bgServerRowController"
+   ng-class="{active: item.getActiveConnections(), 'bg-focused': bgFocused}"
+   id="bg-server-{{item.dataSource}}-{{item.identifier}}"
+   class="settings-connection bg-server-row">
+
+    <div class="icon type" ng-class="item.protocol"></div>
+    <span class="name">{{item.name}}</span>
+    <span class="bg-badge bg-badge-proto">{{ bgProtocol() }}</span>
+    <span class="bg-meta" ng-show="bgDetails.address">{{ bgDetails.address }}</span>
+    <span class="bg-meta bg-meta-user" ng-show="bgDetails.username">{{ bgDetails.username }}</span>
+    <span class="activeUserCount" ng-show="item.getActiveConnections()"
+        translate="SETTINGS_CONNECTIONS.INFO_ACTIVE_USER_COUNT"
+        translate-values="{USERS: item.getActiveConnections()}"></span>
+    <span class="bg-row-edit" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zm17.71-10.21a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></span>
+
+</a>

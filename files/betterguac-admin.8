@@ -1,0 +1,24 @@
+.TH BETTERGUAC-ADMIN 8 "November 2026" "betterguac" "System Administration"
+.SH NAME
+betterguac-admin \- BetterGuac administration helper
+.SH SYNOPSIS
+.B betterguac-admin
+.RB status
+.br
+.B betterguac-admin
+.RB reset-password
+.I username
+.br
+.B betterguac-admin
+.RB setup
+.SH DESCRIPTION
+.B status
+shows the BetterGuac services and the sign-in address.
+.B reset-password
+gives an account a new random password, prints it once and clears its
+two-factor enrollment so the user enrolls again at the next sign-in.
+.B setup
+re-runs the install-time setup; it never overwrites existing settings or data.
+.SH FILES
+/etc/betterguac/guacamole.properties, /etc/betterguac/initial-admin.txt,
+/etc/betterguac/keys, /etc/betterguac/sync.env

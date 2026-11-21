@@ -1,0 +1,12 @@
+#!/bin/sh
+# BetterGuac YAML-to-database sync. Run as root:
+#   sudo betterguac-sync plan /etc/betterguac/betterguac.yaml
+#   sudo betterguac-sync apply /etc/betterguac/betterguac.yaml --confirm <plan-id>
+# Settings (database login, key folder) come from /etc/betterguac/sync.env.
+GUAC_SYNC_ENV=${GUAC_SYNC_ENV:-/etc/betterguac/sync.env}
+export GUAC_SYNC_ENV
+if [ ! -r "$GUAC_SYNC_ENV" ]; then
+    echo "betterguac-sync: can't read $GUAC_SYNC_ENV (run it with sudo)" >&2
+    exit 1
+fi
+exec python3 /usr/lib/betterguac/sync/betterguac_sync.py "$@"

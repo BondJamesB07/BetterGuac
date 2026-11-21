@@ -1,0 +1,24 @@
+# BetterGuac web application settings (GUACAMOLE_HOME=/etc/betterguac).
+# Created by the betterguac package on first install. Your changes are kept
+# on upgrade. Readable only by root and the tomcat group: it holds the
+# database password.
+
+# guacd
+guacd-hostname: 127.0.0.1
+guacd-port: 4822
+
+# Database (MariaDB on this machine)
+mysql-hostname: localhost
+mysql-port: 3306
+mysql-database: @DB_NAME@
+mysql-username: @DB_USER@
+mysql-password: @DB_PASS@
+mysql-driver: mariadb
+mysql-ssl-mode: disabled
+mysql-auto-create-accounts: false
+
+# Two-factor sign-in (TOTP)
+totp-issuer: BetterGuac
+
+# SSH keys are given to servers as file paths inside this folder
+betterguac-ssh-key-dir: /etc/betterguac/keys

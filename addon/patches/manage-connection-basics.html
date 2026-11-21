@@ -1,0 +1,111 @@
+<meta name="before" content=".manage-connection > .attributes">
+<div class="section bg-card bg-server-basics" ng-controller="bgServerEditorController">
+
+    <h2 class="header">{{ 'BETTERGUAC.SECTION_HEADER_SERVER_BASICS' | translate }}</h2>
+    <bg-help label="About this form">
+        <ul>
+            <li>These are the settings most servers need: host, port, username and password.</li>
+            <li>SSH key file: the full path to the private key file on the BetterGuac server, like <code>/etc/betterguac/keys/web-01</code>. Don't paste the key itself. The file must be in <code>/etc/betterguac/keys</code>, owned by root with group tomcat and mode 640. The key is read from the file each time someone opens the server, so it never goes into the database or the browser. If the key has a passphrase, set it under "Show all settings".</li>
+            <li>Leave the port empty for the usual port of that type (SSH 22, RDP 3389, VNC 5900).</li>
+            <li>Groups: one or more names separated by commas, like <code>Proxmox, database</code>. A new name creates the group. Anyone who's a member of one of these groups can open this server.</li>
+            <li>For RDP, the domain, security mode and "ignore certificate" are here too.</li>
+            <li>"Show all settings" opens every Guacamole option for this server.</li>
+            <li>Under <strong>Assigned to</strong>, tick the users who can open this server. Those ticks save right away. Admins can open every server anyway.</li>
+        </ul>
+    </bg-help>
+
+    <div class="bg-grid" ng-show="connection.protocol">
+        <label class="bg-field bg-wide">
+            <span>{{ 'BETTERGUAC.FIELD_HOST' | translate }}</span>
+            <input type="text" ng-model="parameters.hostname" autocorrect="off" autocapitalize="off" spellcheck="false"
+                   placeholder="192.0.2.10">
+        </label>
+        <label class="bg-field bg-narrow">
+            <span>{{ 'BETTERGUAC.FIELD_PORT' | translate }}</span>
+            <input type="text" inputmode="numeric" class="bg-port" ng-model="bgPort.value" ng-change="bgPortChanged()" placeholder="{{ bgPortPlaceholder() }}">
+        </label>
+        <label class="bg-field">
+            <span>{{ 'BETTERGUAC.FIELD_SERVER_USERNAME' | translate }}</span>
+            <input type="text" ng-model="parameters.username" autocorrect="off" autocapitalize="off" spellcheck="false" autocomplete="off">
+        </label>
+        <label class="bg-field">
+            <span>{{ 'BETTERGUAC.FIELD_SERVER_PASSWORD' | translate }}</span>
+            <input type="password" ng-model="parameters.password" autocomplete="new-password">
+        </label>
+        <label class="bg-field bg-wide bg-keyfile-field" ng-show="connection.protocol === 'ssh'">
+            <span>{{ 'BETTERGUAC.FIELD_SSH_KEY_FILE' | translate }}</span>
+            <input type="text" class="bg-keyfile" ng-model="parameters['private-key-file']" ng-change="bgKeyChanged()" ng-blur="bgKeyCheck()"
+                   autocorrect="off" autocapitalize="off" spellcheck="false" autocomplete="off" placeholder="/etc/betterguac/keys/web-01">
+            <small class="bg-hint" ng-hide="bgKey.result || bgKey.legacy">{{ 'BETTERGUAC.HELP_SSH_KEY_FILE' | translate }}</small>
+            <small class="bg-hint bg-error bg-key-legacy" ng-show="bgKey.legacy && !parameters['private-key-file']">{{ 'BETTERGUAC.HELP_SSH_KEY_LEGACY' | translate }}</small>
+            <small class="bg-hint bg-key-result" ng-show="bgKey.result" ng-class="{'bg-ok': bgKey.result.ok, 'bg-error': !bgKey.result.ok}">{{ bgKey.result.detail }}</small>
+        </label>
+        <label class="bg-field bg-wide bg-groups-field" ng-show="bgGroups.loaded">
+            <span>{{ 'BETTERGUAC.FIELD_HEADER_GROUPS' | translate }}</span>
+            <input type="text" ng-model="bgGroups.text" list="bg-editor-group-names" autocomplete="off" spellcheck="false" placeholder="Proxmox, database">
+            <datalist id="bg-editor-group-names"><option ng-repeat="g in bgGroups.names" value="{{ g }}"></option></datalist>
+            <small class="bg-hint">{{ 'BETTERGUAC.HELP_GROUPS_FIELD' | translate }}</small>
+        </label>
+        <label class="bg-field" ng-show="bgIsRdp()">
+            <span>{{ 'BETTERGUAC.FIELD_DOMAIN' | translate }}</span>
+            <input type="text" ng-model="parameters.domain" autocorrect="off" autocapitalize="off">
+        </label>
+        <label class="bg-field" ng-show="bgIsRdp()">
+            <span>{{ 'BETTERGUAC.FIELD_SECURITY' | translate }}</span>
+            <select ng-model="parameters.security">
+                <option value="">{{ 'BETTERGUAC.OPTION_DEFAULT' | translate }}</option>
+                <option value="any">Any</option>
+                <option value="nla">NLA</option>
+                <option value="nla-ext">NLA + Extended</option>
+                <option value="tls">TLS</option>
+                <option value="vmconnect">Hyper-V / VMConnect</option>
+                <option value="rdp">RDP encryption</option>
+            </select>
+        </label>
+        <label class="bg-check bg-wide" ng-show="bgIsRdp()">
+            <input type="checkbox" ng-model="bgIgnoreCert.value" ng-change="bgIgnoreCertChanged()">
+            <span>{{ 'BETTERGUAC.FIELD_IGNORE_CERT' | translate }}</span>
+        </label>
+    </div>
+    <p class="bg-note" ng-hide="connection.protocol">{{ 'BETTERGUAC.HELP_PICK_PROTOCOL' | translate }}</p>
+
+    <ul class="bg-problems" ng-show="bgCheck().length && connection.protocol">
+        <li ng-repeat="problem in bgCheck()">{{ problem | translate }}</li>
+    </ul>
+
+    <label class="bg-check bg-show-all-toggle">
+        <input type="checkbox" ng-model="bgShowAll.value">
+        <span>{{ 'BETTERGUAC.ACTION_SHOW_ALL_SETTINGS' | translate }}</span>
+    </label>
+
+    <div class="bg-assign" ng-if="bgServerId && bgAssign">
+        <h2 class="header">{{ 'BETTERGUAC.SECTION_HEADER_ASSIGNED' | translate }}</h2>
+        <p class="bg-note">{{ 'BETTERGUAC.HELP_ASSIGNED' | translate }}</p>
+        <p class="bg-note bg-error" ng-show="bgAssign.error">{{ 'BETTERGUAC.ERROR_ASSIGN_LOAD' | translate }}</p>
+        <div class="bg-assign-list">
+            <label class="bg-assign-row" ng-repeat="row in bgAssign.users" ng-class="{'bg-disabled': row.disabled}">
+                <input type="checkbox" ng-model="row.assigned" ng-change="bgToggleAssignment(row)" ng-disabled="row.saving">
+                <span class="bg-assign-name">{{ row.username }}</span>
+                <span class="bg-badge bg-role-custom" ng-show="row.role === 'custom'">{{ 'BETTERGUAC.ROLE_CUSTOM' | translate }}</span>
+                <span class="bg-badge bg-disabled-badge" ng-show="row.disabled">{{ 'BETTERGUAC.BADGE_DISABLED' | translate }}</span>
+                <span class="bg-assign-status" ng-show="row.saving">{{ 'BETTERGUAC.TEXT_SAVING' | translate }}</span>
+                <span class="bg-assign-status bg-ok" ng-show="row.status === 'saved'">{{ 'BETTERGUAC.TEXT_SAVED' | translate }}</span>
+                <span class="bg-assign-status bg-error" ng-show="row.status === 'failed'">{{ 'BETTERGUAC.TEXT_SAVE_FAILED' | translate }}</span>
+            </label>
+            <p class="bg-note" ng-hide="bgAssign.users.length">{{ 'BETTERGUAC.TEXT_NO_PLAIN_USERS' | translate }}</p>
+        </div>
+        <div class="bg-group-access" ng-show="bgGroups.access.length">
+            <p class="bg-note"><strong>Also through groups</strong> (change these on each user's page):</p>
+            <p class="bg-group-access-row" ng-repeat="g in bgGroups.access">
+                <span class="bg-group-tag">{{ g.name }}</span>
+                <span ng-show="g.members.length">{{ g.members.join(', ') }}</span>
+                <span class="bg-muted" ng-hide="g.members.length">no members yet</span>
+            </p>
+        </div>
+        <p class="bg-note" ng-show="bgAssign.admins.length">
+            {{ 'BETTERGUAC.TEXT_ADMINS_SEE_ALL' | translate }}
+            <span class="bg-admin-names"><span ng-repeat="row in bgAssign.admins">{{ row.username }}{{ $last ? '' : ', ' }}</span></span>
+        </p>
+    </div>
+
+</div>

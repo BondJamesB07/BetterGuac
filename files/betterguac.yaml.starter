@@ -1,0 +1,28 @@
+# BetterGuac servers and users, kept as YAML.
+#
+#   sudo betterguac-sync plan /etc/betterguac/betterguac.yaml
+#   sudo betterguac-sync apply /etc/betterguac/betterguac.yaml --confirm <plan-id>
+#
+# The sync only manages what this file creates. Servers and users you add in
+# the web interface are left alone. A full example with every option is in
+# /usr/share/betterguac/betterguac.yaml.example.
+version: 1
+kind: guacamole-db-sync
+instance: @INSTANCE@
+
+connections: []          # delete the [] when you add entries; the example below is commented out
+#  - key: web-01
+#    name: Web-01
+#    protocol: ssh
+#    params:
+#      hostname: 192.0.2.10
+#      port: 22
+#      username: admin
+#      private-key-file: /etc/betterguac/keys/web-01
+
+users: []                # delete the [] when you add entries; the example below is commented out
+#  - username: someone@example.com
+#    email: someone@example.com
+#    password: {env: SOMEONE_PASSWORD}   # put SOMEONE_PASSWORD=... in /etc/betterguac/sync.env
+#    password_mode: initial
+#    connections: [web-01]

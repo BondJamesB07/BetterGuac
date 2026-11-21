@@ -1,0 +1,52 @@
+<meta name="replace" content=".settings.users table.user-list">
+<div class="bg-user-list">
+    <bg-help class="bg-help-users" label="What is this page?">
+        <p><strong>Users</strong></p>
+        <ul>
+            <li>Everyone who can sign in to BetterGuac. Click a person to edit them, or <strong>New user</strong> to add one.</li>
+            <li><strong>Admin</strong> manages users and servers. <strong>User</strong> only sees the servers assigned to them and their own profile.</li>
+            <li><strong>MFA on</strong>: two-factor sign-in is set up. <strong>MFA not set up</strong>: they'll be asked to scan a QR code the next time they sign in.</li>
+            <li>The number of servers counts everything that person can open: servers given to them one by one plus the servers in their groups. Their server groups show as tags.</li>
+            <li>New accounts sign in with their email address. Older accounts marked "Signs in with a username" keep signing in the way they always have.</li>
+        </ul>
+    </bg-help>
+    <a class="bg-user-row" ng-repeat="manageableUser in manageableUserPage"
+       ng-controller="bgUserRowController"
+       ng-href="{{ bgEditURL() }}"
+       ng-class="{'bg-disabled': manageableUser.user.disabled}">
+
+        <span class="bg-avatar">
+            <img ng-if="bgAvatar()" ng-src="{{ bgAvatar() }}" alt="">
+            <span ng-if="!bgAvatar()">{{ bgInitial() }}</span>
+        </span>
+
+        <span class="bg-user-names">
+            <span class="bg-user-display">{{ bgDisplayName() || manageableUser.user.username }}</span>
+            <span class="bg-user-login">{{ manageableUser.user.username }}</span>
+        </span>
+
+        <span class="bg-badges">
+            <span class="bg-badge bg-role-admin" ng-show="bgRole === 'admin'">{{ 'BETTERGUAC.ROLE_ADMIN' | translate }}</span>
+            <span class="bg-badge bg-role-user" ng-show="bgRole === 'user'">{{ 'BETTERGUAC.ROLE_USER' | translate }}</span>
+            <span class="bg-badge bg-role-custom" ng-show="bgRole === 'custom'">{{ 'BETTERGUAC.ROLE_CUSTOM' | translate }}</span>
+            <span class="bg-badge bg-mfa-on" ng-show="bgMfa() === 'on'">{{ 'BETTERGUAC.BADGE_MFA_ON' | translate }}</span>
+            <span class="bg-badge bg-mfa-pending" ng-show="bgMfa() === 'pending'">{{ 'BETTERGUAC.BADGE_MFA_PENDING' | translate }}</span>
+            <span class="bg-badge bg-mfa-off" ng-show="bgMfa() === 'off'">{{ 'BETTERGUAC.BADGE_MFA_OFF' | translate }}</span>
+            <span class="bg-badge bg-disabled-badge" ng-show="manageableUser.user.disabled">{{ 'BETTERGUAC.BADGE_DISABLED' | translate }}</span>
+        </span>
+
+        <span class="bg-meta bg-assigned" ng-show="bgRole === 'user' || bgRole === 'custom'">
+            {{ 'BETTERGUAC.TEXT_ASSIGNED_COUNT' | translate:{ COUNT : bgAssigned } }}
+        </span>
+        <span class="bg-meta bg-assigned" ng-show="bgRole === 'admin'">{{ 'BETTERGUAC.TEXT_ALL_SERVERS' | translate }}</span>
+        <span class="bg-meta bg-legacy-login" ng-show="manageableUser.user.username.indexOf('@') === -1">{{ 'BETTERGUAC.TEXT_USERNAME_SIGN_IN' | translate }}</span>
+        <span class="bg-meta bg-user-groups" ng-show="bgGroups.length && bgRole !== 'admin'">
+            <span class="bg-group-tag" ng-repeat="g in bgGroups">{{ g }}</span>
+        </span>
+
+        <span class="bg-meta bg-last-active" ng-show="manageableUser.user.lastActive">{{ manageableUser.user.lastActive | date : dateFormat }}</span>
+
+        <span class="bg-row-edit" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zm17.71-10.21a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></span>
+    </a>
+    <p class="bg-empty" ng-show="isLoaded() && !manageableUserPage.length">{{ 'BETTERGUAC.TEXT_NO_USERS' | translate }}</p>
+</div>

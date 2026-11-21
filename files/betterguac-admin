@@ -1,0 +1,6 @@
+#!/bin/sh
+# BetterGuac administration helper. Run as root:
+#   sudo betterguac-admin status
+#   sudo betterguac-admin reset-password <username>
+#   sudo betterguac-admin setup        (re-run the install-time setup)
+exec /usr/lib/betterguac/betterguac-setup "$@"
