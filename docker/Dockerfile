@@ -79,7 +79,7 @@ RUN set -eux; \
     dpkg -i --force-depends /tmp/betterguac.deb \
         || echo "dpkg -i reported the expected postinst failure (no MariaDB at install time)"; \
     rm -f /tmp/betterguac.deb; \
-    # The .deb ships relative symlinks inside /etc/betterguac/{extensions,lib}.
+    # The .deb ships symlinks inside /etc/betterguac/{extensions,lib}.
     # /etc/betterguac is replaced by an empty Docker volume at run time, so
     # re-create the same links now: the first-run init script copies them into
     # the volume. The FreeRDP plugin folder is named for the processor type
