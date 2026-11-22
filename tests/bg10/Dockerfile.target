@@ -1,0 +1,7 @@
+FROM debian:trixie
+RUN apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends \
+      xrdp xorgxrdp tigervnc-standalone-server tigervnc-tools xterm x11-xserver-utils dbus dbus-x11 openssl xauth \
+    >/dev/null && apt-get clean
+COPY target-entry.sh /entry.sh
+RUN chmod 755 /entry.sh
+CMD ["/entry.sh"]

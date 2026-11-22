@@ -44,7 +44,7 @@ Debian and Ubuntu packages (Docker image)
   The Docker image is built on debian:trixie-slim and contains Debian
   packages under their own licenses, some under the GNU GPL (for example
   mariadb-server, GPL-2, and libvncclient1, GPL-2+). The image lists every
-  package with its exact version in /usr/share/doc/betterguac/sbom/:
+  package with its exact version in /usr/share/betterguac/legal/sbom/:
     packages.tsv           package, version, architecture, source package
     betterguac.spdx.json   the same as an SPDX 2.3 document
   Each package's license is in /usr/share/doc/<package>/copyright in the

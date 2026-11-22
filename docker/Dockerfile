@@ -16,7 +16,7 @@ LABEL org.opencontainers.image.title="BetterGuac" \
       org.opencontainers.image.version="1.6.0-bg10" \
       org.opencontainers.image.description="BetterGuac remote access (based on Apache Guacamole 1.6.0), single container" \
       org.opencontainers.image.licenses="Apache-2.0" \
-      io.betterguac.sbom="/usr/share/doc/betterguac/sbom (Debian packages and their licenses; source notice in /usr/share/doc/betterguac/SOURCES)" \
+      io.betterguac.sbom="/usr/share/betterguac/legal/sbom (Debian packages and their licenses; source notice in /usr/share/betterguac/legal/SOURCES)" \
       org.opencontainers.image.source="https://github.com/BondJamesB07/BetterGuac" \
       io.betterguac.package-version="1.6.0+bg10" \
       org.opencontainers.image.revision="${VCS_REF}"
@@ -122,12 +122,12 @@ RUN set -eux; \
 # as a table and as SPDX 2.3, plus where to get the source (SOURCES).
 COPY docker/make-sbom.py /usr/local/lib/betterguac-make-sbom.py
 RUN set -eux; \
-    install -d -m 0755 /usr/share/doc/betterguac/sbom; \
-    python3 /usr/local/lib/betterguac-make-sbom.py /usr/share/doc/betterguac/sbom; \
+    install -d -m 0755 /usr/share/betterguac/legal/sbom; \
+    python3 /usr/local/lib/betterguac-make-sbom.py /usr/share/betterguac/legal/sbom; \
     rm -f /usr/local/lib/betterguac-make-sbom.py; \
-    test -s /usr/share/doc/betterguac/sbom/packages.tsv; \
-    test -s /usr/share/doc/betterguac/sbom/betterguac.spdx.json; \
-    test -s /usr/share/doc/betterguac/SOURCES
+    test -s /usr/share/betterguac/legal/sbom/packages.tsv; \
+    test -s /usr/share/betterguac/legal/sbom/betterguac.spdx.json; \
+    test -s /usr/share/betterguac/legal/SOURCES
 
 COPY docker/supervisord.conf /etc/supervisor/conf.d/betterguac.conf
 COPY docker/entrypoint.sh /usr/local/bin/betterguac-entrypoint

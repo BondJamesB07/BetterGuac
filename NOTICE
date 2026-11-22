@@ -27,7 +27,7 @@ BetterGuac changes to Apache Guacamole 1.6.0 in this package:
 - BetterGuac interface add-on and profile extension (new code).
 - YAML-to-database sync tool, Activity log and schema migrations (new code).
 
-Source code: see /usr/share/doc/betterguac/SOURCES (in the source tree:
+Source code: see /usr/share/betterguac/legal/SOURCES (in the source tree:
 files/SOURCES).
 
 Apache Guacamole, Guacamole and the Guacamole logo are trademarks of The

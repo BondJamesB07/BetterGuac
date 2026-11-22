@@ -40,7 +40,7 @@ doc = {
                      "comment": "Debian packages installed in the BetterGuac Docker image. "
                                 "Licenses: /usr/share/doc/<package>/copyright. "
                                 "Source: https://deb.debian.org/debian/pool/main/ or "
-                                "https://snapshot.debian.org/, see /usr/share/doc/betterguac/SOURCES."},
+                                "https://snapshot.debian.org/, see /usr/share/betterguac/legal/SOURCES."},
     "packages": [],
 }
 for pkg, ver, arch, src, srcver in rows:

@@ -6,8 +6,12 @@ Comment: BetterGuac is based on Apache Guacamole 1.6.0
  (https://guacamole.apache.org/). The guacd source, the web application and
  the JDBC and TOTP extensions are the Apache Guacamole 1.6.0 releases from
  The Apache Software Foundation, with the BetterGuac changes listed in
- /usr/share/doc/betterguac/NOTICE. Where to get the source of everything in
- this package: /usr/share/doc/betterguac/SOURCES.
+ /usr/share/betterguac/legal/NOTICE. Where to get the source of everything
+ in this package: /usr/share/betterguac/legal/SOURCES. In short: BetterGuac,
+ https://github.com/BondJamesB07/BetterGuac (tag v1.6.0-bg10); Apache
+ Guacamole, https://archive.apache.org/dist/guacamole/1.6.0/source/; the
+ Java libraries bundled in the web application, unmodified, from Maven
+ Central (https://repo1.maven.org/maven2/) as source jars.
 
 Files: *
 Copyright: 2016-2026 The Apache Software Foundation
@@ -18,8 +22,7 @@ Comment: Apache Guacamole 1.6.0: guacd and its protocol plugins, the web
  BetterGuac patches change carry a notice saying so. The web application
  bundles third-party libraries under their own licenses (including the
  Eclipse Public License 2.0 and CDDL 1.1); they are shipped unmodified and
- listed in the LICENSE file inside the WAR (META-INF/LICENSE) and in
- /usr/share/doc/betterguac/LICENSE.
+ listed in the LICENSE file inside the WAR (META-INF/LICENSE).
 
 Files: upstream/*
 Copyright: 2016-2026 The Apache Software Foundation

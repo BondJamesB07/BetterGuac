@@ -52,6 +52,12 @@ install -m 644 files/NOTICE "$P/usr/share/doc/betterguac/NOTICE"
 install -m 644 "$B/guacamole-server-1.6.0/LICENSE" "$P/usr/share/doc/betterguac/LICENSE"
 install -m 644 files/README.Debian "$P/usr/share/doc/betterguac/README.Debian"
 install -m 644 files/SOURCES "$P/usr/share/doc/betterguac/SOURCES"
+# Also outside /usr/share/doc: minimal Ubuntu and Debian images drop
+# /usr/share/doc (all but copyright) at install time, and these must stay.
+mkdir -p "$P/usr/share/betterguac/legal"
+install -m 644 files/NOTICE "$P/usr/share/betterguac/legal/NOTICE"
+install -m 644 files/SOURCES "$P/usr/share/betterguac/legal/SOURCES"
+install -m 644 LICENSE "$P/usr/share/betterguac/legal/LICENSE"
 
 # credits of the two upstream extensions: each release archive has its own
 # LICENSE, NOTICE and bundled/ (third-party licenses of the libraries inside
@@ -65,4 +71,6 @@ for x in guacamole-auth-jdbc guacamole-auth-totp; do
     cp -R "$X/bundled" "$D/bundled"
     find "$D/bundled" -type d -exec chmod 755 {} +
     find "$D/bundled" -type f -exec chmod 644 {} +
+    # and outside /usr/share/doc, which minimal images drop
+    cp -R "$D" "$P/usr/share/betterguac/legal/$x"
 done

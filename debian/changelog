@@ -10,7 +10,7 @@ betterguac (1.6.0+bg10) trixie; urgency=medium
     CDDL among them) are shipped unmodified; betterguac-setup converts them
     from javax to jakarta on the installed machine with Debian's
     tomcat-jakartaee-migration (new dependency; betterguac-admin webapp
-    rebuilds it). New /usr/share/doc/betterguac/SOURCES.
+    rebuilds it). New SOURCES and NOTICE in /usr/share/betterguac/legal/.
   * License: debian/copyright credits The Apache Software Foundation for the
     upstream files and Robert Debs for BetterGuac's own work.
   * License: change notices in every patched upstream file (guacd sources,
