@@ -11,7 +11,7 @@
 pkgname=betterguac
 _bgver=1.6.0-bg10
 pkgver=1.6.0+bg10
-pkgrel=1
+pkgrel=2
 pkgdesc='Remote access gateway (SSH, RDP, VNC) based on Apache Guacamole, with MFA, YAML sync and an activity log'
 arch=('x86_64' 'aarch64')
 url='https://betterguac.org'

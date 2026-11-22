@@ -6,7 +6,20 @@ _bg_init_mariadb() {
   # running database, so a fresh one is initialised here (only if none exists)
   if [ ! -d /var/lib/mysql/mysql ]; then
     echo "betterguac: initialising MariaDB in /var/lib/mysql"
-    mariadb-install-db --user=mysql --basedir=/usr --datadir=/var/lib/mysql >/dev/null
+    # --skip-test-db: no anonymous accounts and no open "test" database
+    mariadb-install-db --user=mysql --basedir=/usr --datadir=/var/lib/mysql \
+      --skip-test-db >/dev/null
+    # Arch's MariaDB listens on every interface by default. This database was
+    # made for BetterGuac only, so keep it on this machine by
+    # default. Not owned by the package: delete it to open MariaDB up again.
+    if [ ! -e /etc/my.cnf.d/betterguac-local.cnf ]; then
+      printf '%s\n' \
+        '# Written by the betterguac package when it initialised MariaDB here.' \
+        '# Keeps MariaDB off the network (Arch default: every interface).' \
+        '# Delete this file and restart mariadb if other machines need it.' \
+        '[mysqld]' 'bind-address=127.0.0.1' > /etc/my.cnf.d/betterguac-local.cnf
+      chmod 644 /etc/my.cnf.d/betterguac-local.cnf
+    fi
   fi
 }
 
