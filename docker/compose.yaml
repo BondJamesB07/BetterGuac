@@ -1,0 +1,49 @@
+name: bgdocker
+
+services:
+  betterguac:
+    image: betterguac:1.6.0-bg6-arm64
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bgdocker-betterguac
+    # Publish ONLY on the host's loopback; no 4822/3306 anywhere.
+    ports:
+      - "127.0.0.1:18080:8080"
+    volumes:
+      # Named volumes keep state across stop/start and recreate. The entrypoint
+      # seeds /etc/betterguac from the image on first run because a named volume
+      # hides the image's directory; the shipped extensions/ and lib/ symlinks
+      # are re-created there.
+      - bgdocker_db:/var/lib/mysql
+      - bgdocker_conf:/etc/betterguac
+      - bgdocker_state:/var/lib/betterguac
+      - bgdocker_logs:/var/log/betterguac
+    init: false           # the image's ENTRYPOINT is tini, which reaps and forwards
+    stop_grace_period: 2m
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/betterguac-healthcheck"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 90s
+    networks:
+      - bgdocker_net
+    # Keep Tomcat from inheriting anything from the host environment.
+    environment:
+      LANG: C.UTF-8
+
+networks:
+  bgdocker_net:
+    name: bgdocker_net
+
+volumes:
+  bgdocker_db:
+    name: bgdocker_db
+  bgdocker_conf:
+    name: bgdocker_conf
+  bgdocker_state:
+    name: bgdocker_state
+  bgdocker_logs:
+    name: bgdocker_logs

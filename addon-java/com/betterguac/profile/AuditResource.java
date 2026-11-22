@@ -164,20 +164,22 @@ public class AuditResource {
       + "remote_addr, target_type, target_name, detail, source FROM bg_audit_event WHERE 1=1";
 
     private static final String STARTS =
-        "SELECT CONCAT('s', history_id), start_date, 'session', 'session.start', 'success', username, "
-      + "remote_host, 'server', connection_name, "
+        "SELECT CONCAT('s', history_id) AS id, start_date AS t, 'session' AS category, 'session.start' AS action, "
+      + "'success' AS outcome, username AS actor, remote_host AS remote_addr, 'server' AS target_type, "
+      + "connection_name AS target_name, "
       + "CASE WHEN sharing_profile_name IS NOT NULL THEN CONCAT('Joined a shared session (', sharing_profile_name, ')') "
-      + "WHEN end_date IS NULL THEN 'Session started (still open)' ELSE 'Session started' END, "
-      + "'web' FROM guacamole_connection_history WHERE 1=1";
+      + "WHEN end_date IS NULL THEN 'Session started (still open)' ELSE 'Session started' END AS detail, "
+      + "'web' AS source FROM guacamole_connection_history WHERE 1=1";
 
     private static final String ENDS =
-        "SELECT CONCAT('x', history_id), end_date, 'session', 'session.end', 'info', username, "
-      + "remote_host, 'server', connection_name, "
+        "SELECT CONCAT('x', history_id) AS id, end_date AS t, 'session' AS category, 'session.end' AS action, "
+      + "'info' AS outcome, username AS actor, remote_host AS remote_addr, 'server' AS target_type, "
+      + "connection_name AS target_name, "
       + "CONCAT('Session ended after ', "
       + "CASE WHEN TIMESTAMPDIFF(SECOND, start_date, end_date) < 60 THEN CONCAT(TIMESTAMPDIFF(SECOND, start_date, end_date), ' s') "
       + "WHEN TIMESTAMPDIFF(SECOND, start_date, end_date) < 3600 THEN CONCAT(TIMESTAMPDIFF(MINUTE, start_date, end_date), ' min') "
-      + "ELSE CONCAT(TIMESTAMPDIFF(HOUR, start_date, end_date), ' h ', MOD(TIMESTAMPDIFF(MINUTE, start_date, end_date), 60), ' min') END), "
-      + "'web' FROM guacamole_connection_history WHERE end_date IS NOT NULL";
+      + "ELSE CONCAT(TIMESTAMPDIFF(HOUR, start_date, end_date), ' h ', MOD(TIMESTAMPDIFF(MINUTE, start_date, end_date), 60), ' min') END) AS detail, "
+      + "'web' AS source FROM guacamole_connection_history WHERE end_date IS NOT NULL";
 
     /**
      * The merged log as one SELECT, with filters pushed into each branch so

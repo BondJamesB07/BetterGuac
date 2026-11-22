@@ -1,0 +1,13 @@
+# The build context only needs debs/ and docker/; keep tests/logs out of the
+# image layers and out of the build context transfer.
+.git
+.env
+test-results
+tests
+suggested-package-patches
+README.md
+claude-prompt.md
+claude-run.*
+*.tgz
+betterguac-backup.sql
+db.tgz

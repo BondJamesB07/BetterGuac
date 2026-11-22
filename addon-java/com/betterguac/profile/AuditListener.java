@@ -128,9 +128,14 @@ public class AuditListener implements Listener {
                 row = AuditLog.event("mfa", "mfa.challenge").outcome("info")
                         .detail("Password accepted; asked for a two-factor code");
         }
+        else if (code) {
+            // The password was accepted on the step before; the code was wrong
+            row = AuditLog.event("mfa", "mfa.failed").outcome("failure")
+                    .detail("Two-factor code was rejected");
+        }
         else {
             row = AuditLog.event("auth", "auth.failed").outcome("failure")
-                    .detail(code ? "Sign-in with a two-factor code failed" : "Wrong username or password, or the account is disabled");
+                    .detail("Wrong username or password, or the account is disabled");
         }
         String name = user == null ? null : user.trim();
         row.actor(name).remote(remoteOf(c)).target("user", name, name).record();
