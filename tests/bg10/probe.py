@@ -32,6 +32,8 @@ def params(proto, host, port, user, pw):
     if proto == 'rdp':
         return {'hostname': host, 'port': port, 'username': user, 'password': pw,
                 'security': 'any', 'ignore-cert': 'true'}
+    if proto == 'ssh':
+        return {'hostname': host, 'port': port, 'username': user, 'password': pw}
     return {'hostname': host, 'port': port, 'password': pw}
 
 def summarize(seen, total, syncs, label, need_ready=True):
@@ -71,7 +73,7 @@ def guacd(proto, host, port, user, pw):
     s.close()
     return summarize(seen, total, syncs, 'guacd-direct %s' % proto)
 
-def web(proto, host, port, user, pw, auser, apw, base):
+def web(proto, host, port, user, pw, auser, apw, base, existing=None):
     ctx = ssl.create_default_context(); ctx.check_hostname = False; ctx.verify_mode = ssl.CERT_NONE
     hdr = {}
     def req(method, path, data=None, ctype=None, timeout=20):
@@ -82,10 +84,13 @@ def web(proto, host, port, user, pw, auser, apw, base):
     tok = json.load(req('POST', '/api/tokens', urllib.parse.urlencode({'username': auser, 'password': apw}).encode(),
                         'application/x-www-form-urlencoded'))
     T = tok['authToken']; ds = tok.get('dataSource', 'mysql')
+    if existing:
+        cid = existing; print('opening existing connection id=%s' % cid)
     body = {'parentIdentifier': 'ROOT', 'name': 'probe-%s-%d' % (proto, int(time.time())), 'protocol': proto,
             'parameters': params(proto, host, port, user, pw), 'attributes': {}}
-    conn = json.load(req('POST', '/api/session/data/%s/connections?token=%s' % (ds, T), json.dumps(body).encode(), 'application/json'))
-    cid = conn['identifier']; print('created %s connection id=%s via REST API (data source %s)' % (proto, cid, ds))
+    if not existing:
+      conn = json.load(req('POST', '/api/session/data/%s/connections?token=%s' % (ds, T), json.dumps(body).encode(), 'application/json'))
+      cid = conn['identifier']; print('created %s connection id=%s via REST API (data source %s)' % (proto, cid, ds))
     q = urllib.parse.urlencode({'token': T, 'GUAC_DATA_SOURCE': ds, 'GUAC_ID': cid, 'GUAC_TYPE': 'c',
                                 'GUAC_WIDTH': '1024', 'GUAC_HEIGHT': '768', 'GUAC_DPI': '96',
                                 'GUAC_IMAGE': 'image/png', 'GUAC_TIMEZONE': 'UTC'}).encode()
@@ -129,7 +134,7 @@ def web(proto, host, port, user, pw, auser, apw, base):
     try: req('POST', '/tunnel?write:%s' % uuid, enc('disconnect').encode(), 'application/octet-stream').read()
     except Exception: pass
     ok = summarize(seen, total, syncs, 'web-tunnel %s' % proto, need_ready=False)
-    if os.environ.get('PROBE_KEEP') != '1':
+    if os.environ.get('PROBE_KEEP') != '1' and not existing:
         try: req('DELETE', '/api/session/data/%s/connections/%s?token=%s' % (ds, cid, T)).read()
         except Exception as e: print('cleanup delete failed: %s' % e)
     return ok
@@ -137,5 +142,6 @@ def web(proto, host, port, user, pw, auser, apw, base):
 if __name__ == '__main__':
     a = sys.argv[1:]
     if a[0] == 'guacd': ok = guacd(*a[1:6])
+    elif a[0] == 'conn': ok = web('ssh', '', '', '', '', a[2], a[3], 'http://127.0.0.1:8080/betterguac', existing=a[1])
     else: ok = web(*a[1:8], a[8] if len(a) > 8 else 'http://127.0.0.1:8080/betterguac')
     sys.exit(0 if ok else 1)

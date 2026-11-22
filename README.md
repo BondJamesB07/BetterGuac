@@ -37,16 +37,20 @@ Your users open a browser, sign in with their email address and an authenticator
 
 | Item | Supported |
 |---|---|
-| Operating system | Debian 13, Ubuntu 26.04 |
-| Architecture | amd64 (x86-64), arm64 |
+| Operating system | Debian 13, Ubuntu 26.04 (`.deb`); Arch Linux (`.pkg.tar.zst`); anything else with Docker |
+| Architecture | amd64 / x86_64, arm64 / aarch64 |
 | Privileges | root or sudo |
 | Network port | 8080/tcp (Tomcat) |
 
-The package depends on `mariadb-server` and `tomcat10` and pulls them in automatically.
+The package depends on MariaDB and Tomcat 10 and pulls them in automatically.
+
+**RHEL, Rocky Linux, AlmaLinux, CentOS and Fedora:** there is no RPM package. Use the Docker image, see [Docker](#docker).
 
 **Important:** BetterGuac stores its data in MariaDB. Installing it on a machine that already runs MySQL replaces MySQL with MariaDB. Use a dedicated machine or VM.
 
 ## Install
+
+### Debian and Ubuntu
 
 Download the package for your architecture, then install it with `apt` so dependencies are resolved:
 
@@ -71,6 +75,36 @@ These questions appear only when you install from an interactive terminal. When 
 echo "betterguac betterguac/admin-email string admin@example.com" | sudo debconf-set-selections
 sudo apt install -y ./betterguac_1.6.0+bg10_amd64.deb
 ```
+
+### Arch Linux
+
+Download the package for your architecture, then install it with `pacman -U`, which pulls in Tomcat 10, MariaDB, a Java runtime and the guacd libraries from Arch's repositories:
+
+```bash
+# x86_64
+sudo pacman -U ./betterguac-1.6.0+bg10-1-x86_64.pkg.tar.zst
+
+# aarch64 (Arch Linux ARM)
+sudo pacman -U ./betterguac-1.6.0+bg10-1-aarch64.pkg.tar.zst
+```
+
+The Arch package asks no questions. It initialises MariaDB if the machine has no database yet, creates the first administrator `admin` with a generated password, and enables and starts `mariadb`, `tomcat10` and `betterguac.target`. To choose the first administrator yourself, set `BETTERGUAC_ADMIN_EMAIL` (and optionally `BETTERGUAC_ADMIN_PASSWORD`) for the install: `sudo BETTERGUAC_ADMIN_EMAIL=admin@example.com pacman -U ./betterguac-...`.
+
+Differences from the Debian package: Arch's Tomcat runs as the `tomcat10` user, so SSH key files are group `tomcat10` (see [SSH keys](#ssh-keys)); the notes for Arch are in `/usr/share/doc/betterguac/README.Arch`. The `PKGBUILD` is in `packaging/arch/` and is attached to the release.
+
+### Docker
+
+The image `bondjamesb07/betterguac` (amd64 and arm64) runs the whole stack in one container. This is the way to run BetterGuac on RHEL, Rocky Linux, AlmaLinux, CentOS, Fedora and any other Linux with Docker:
+
+```bash
+curl -fLO https://betterguac.org/download/compose.yaml
+docker compose up -d --wait
+docker compose exec betterguac cat /etc/betterguac/initial-admin.txt
+```
+
+Then browse to `http://127.0.0.1:8080/betterguac/` on the Docker host. Port 8080 is published on loopback only; put a reverse proxy or a private tunnel in front for access from other machines.
+
+### Check the install
 
 When installation finishes, check that everything is running:
 
@@ -345,6 +379,8 @@ SSH private keys are files on the BetterGuac server, never text in the database 
 
 ```bash
 sudo install -o root -g tomcat -m 640 ./mykey /etc/betterguac/keys/web-01
+# Arch Linux: the group is tomcat10
+sudo install -o root -g tomcat10 -m 640 ./mykey /etc/betterguac/keys/web-01
 ```
 
 Then use `/etc/betterguac/keys/web-01` as the key file, in the web interface or as `private-key-file` in YAML. Rules:
@@ -447,6 +483,8 @@ sudo apt purge betterguac
 
 Before a purge deletes the databases, a copy is saved to `/var/backups/betterguac-purge-<date>.sql.gz`. Tomcat, MariaDB and Java stay installed; remove them with `sudo apt autoremove` if nothing else needs them.
 
+On Arch Linux, `sudo pacman -R betterguac` removes the program and keeps `/etc/betterguac`, `/var/lib/betterguac` and the databases. pacman has no purge; to remove those too, back up, then drop the `betterguac` and `betterguac_yamlsync` databases and their two users, and delete the two folders. The exact commands are in `/usr/share/doc/betterguac/README.Arch`.
+
 ## Troubleshooting
 
 **`error: the following arguments are required: file`**
@@ -529,10 +567,19 @@ These steps were tested on Debian 13. The package is built for the architecture 
 
    The package is written to the folder above the repository, for example `../betterguac_1.6.0+bg10_amd64.deb`. Install it as described in [Install](#install).
 
+### Arch Linux package
+
+`packaging/arch/PKGBUILD` builds the Arch package from the tagged release, the three Apache archives above, MariaDB Connector/J and the Apache Tomcat migration tool. On Arch or Arch Linux ARM:
+
+```bash
+cd packaging/arch
+makepkg -si
+```
+
 ## License and credits
 
 BetterGuac is based on [Apache Guacamole](https://guacamole.apache.org/), used under the Apache License 2.0. The required license and notice files are included in the package, in `/usr/share/doc/betterguac/`. The MySQL authentication and two-factor extensions contain third-party libraries; their upstream LICENSE, NOTICE and per-library license files are kept in `/usr/share/doc/betterguac/guacamole-auth-jdbc/` and `/usr/share/doc/betterguac/guacamole-auth-totp/`. Apache Guacamole and Guacamole are trademarks of the Apache Software Foundation; BetterGuac is an independent project and is not endorsed by the Apache Software Foundation.
 
-BetterGuac's changes to Apache Guacamole files are listed in `/usr/share/betterguac/legal/NOTICE`, and each changed file says so. The Apache Guacamole web application and its bundled third-party libraries (some under the Eclipse Public License 2.0 and CDDL 1.1) are shipped unmodified; they are converted from `javax.*` to `jakarta.*` for Tomcat 10 on the machine where BetterGuac is installed, with Debian's Apache Tomcat migration tool. Where to get the source of BetterGuac, Apache Guacamole and those libraries is in `/usr/share/betterguac/legal/SOURCES`.
+BetterGuac's changes to Apache Guacamole files are listed in `/usr/share/betterguac/legal/NOTICE`, and each changed file says so. The Apache Guacamole web application and its bundled third-party libraries (some under the Eclipse Public License 2.0 and CDDL 1.1) are shipped unmodified; they are converted from `javax.*` to `jakarta.*` for Tomcat 10 on the machine where BetterGuac is installed, with the Apache Tomcat migration tool (Debian's package of it in the `.deb`; the upstream release, shipped unmodified, in the Arch package). The Arch package also ships the stock MariaDB Connector/J jar (LGPL-2.1), because Arch does not package it. Where to get the source of BetterGuac, Apache Guacamole and those libraries is in `/usr/share/betterguac/legal/SOURCES`.
 
 The Docker image is built on Debian and contains Debian packages under their own licenses, some under the GNU GPL (for example MariaDB and libvncclient). The image lists every package and version in `/usr/share/betterguac/legal/sbom/` (`packages.tsv` and an SPDX 2.3 file); their source is in the Debian archive at https://deb.debian.org/debian/pool/main/ and https://snapshot.debian.org/.

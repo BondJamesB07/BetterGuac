@@ -1,0 +1,27 @@
+Arch Linux package
+  The Arch package is built from packaging/arch/PKGBUILD in the BetterGuac
+  source, from the same upstream archives and patches as the .deb. Its
+  dependencies come from Arch's own repositories; their sources are on
+  https://gitlab.archlinux.org/archlinux/packaging/packages and
+  https://archive.archlinux.org/. Two Java components that Arch does not
+  package are shipped unmodified, as their upstream release has them:
+
+    MariaDB Connector/J 2.7.15 (LGPL-2.1)
+      /usr/share/betterguac/java/mariadb-java-client-2.7.15.jar
+      License: /usr/share/betterguac/legal/mariadb-connector-j/LICENSE
+      Binary:  https://repo1.maven.org/maven2/org/mariadb/jdbc/mariadb-java-client/2.7.15/
+      Source:  https://github.com/mariadb-corporation/mariadb-connector-j (tag 2.7.15; the 2.7 series, as in Debian and Ubuntu, because Guacamole 1.6.0 connects with jdbc:mysql: URLs),
+               and mariadb-java-client-2.7.15-sources.jar next to the binary.
+
+    Apache Tomcat migration tool for Jakarta EE 1.0.13 (Apache License 2.0)
+      /usr/share/betterguac/jakartaee-migration/ (run by
+      /usr/lib/betterguac/javax2jakarta in place of Debian's javax2jakarta)
+      License: /usr/share/betterguac/legal/jakartaee-migration/
+      Binary:  https://archive.apache.org/dist/tomcat/jakartaee-migration/v1.0.13/binaries/
+      Source:  https://archive.apache.org/dist/tomcat/jakartaee-migration/v1.0.13/source/
+      Its lib/ folder holds Apache Commons IO, Lang, Codec and Compress and
+      Apache BCEL (Apache License 2.0), and Eclipse Equinox OSGi 3.24.300
+      (org.eclipse.osgi-3.24.300.jar, Eclipse Public License 2.0; its
+      license is about.html inside the jar). Equinox source:
+      https://github.com/eclipse-equinox/equinox (tag I20260721-2300), and
+      https://repo1.maven.org/maven2/org/eclipse/platform/org.eclipse.osgi/3.24.300/

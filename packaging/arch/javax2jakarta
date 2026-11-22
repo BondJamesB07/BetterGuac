@@ -1,0 +1,4 @@
+#!/bin/sh
+# Apache Tomcat migration tool for Jakarta EE, as shipped (unmodified) with
+# the BetterGuac Arch package. Same command line as Debian's javax2jakarta.
+exec java -cp '/usr/share/betterguac/jakartaee-migration/lib/*' org.apache.tomcat.jakartaee.MigrationCLI "$@"

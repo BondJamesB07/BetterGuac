@@ -1,0 +1,78 @@
+# BetterGuac pacman scriptlets. Every setup step checks first and never
+# overwrites settings, accounts or data that already exist.
+
+_bg_init_mariadb() {
+  # Arch's mariadb package leaves the data folder empty; BetterGuac needs a
+  # running database, so a fresh one is initialised here (only if none exists)
+  if [ ! -d /var/lib/mysql/mysql ]; then
+    echo "betterguac: initialising MariaDB in /var/lib/mysql"
+    mariadb-install-db --user=mysql --basedir=/usr --datadir=/var/lib/mysql >/dev/null
+  fi
+}
+
+_bg_system_users() {
+  # pacman runs its sysusers and tmpfiles hooks after the install scriptlets,
+  # so the mysql and tomcat10 accounts and their folders are created here first
+  systemd-sysusers >/dev/null 2>&1 || true
+  local f
+  for f in mariadb.conf tomcat10.conf; do
+    [ -e /usr/lib/tmpfiles.d/$f ] && systemd-tmpfiles --create $f >/dev/null 2>&1
+  done
+  return 0
+}
+
+_bg_configure() {
+  _bg_system_users
+  _bg_init_mariadb
+  [ -d /run/systemd/system ] && systemctl daemon-reload >/dev/null 2>&1
+  /usr/lib/betterguac/betterguac-setup configure || {
+    echo "betterguac: setup did not finish. Fix the error above, then run: sudo betterguac-admin configure"
+    return 0
+  }
+}
+
+post_install() {
+  # like dh_installsystemd on Debian: enable guacd on first install only
+  [ -d /run/systemd/system ] && systemctl enable --quiet betterguac-guacd.service >/dev/null 2>&1
+  _bg_configure
+  [ -s /etc/betterguac/initial-admin.txt ] || return 0
+  cat <<'EOF'
+
+betterguac: the first admin's email and password are in
+            /etc/betterguac/initial-admin.txt
+            Sign in, set up your own admin account, then delete that file.
+            Status: sudo betterguac-admin status   Docs: /usr/share/doc/betterguac/README.Arch
+EOF
+}
+
+post_upgrade() {
+  _bg_configure
+}
+
+pre_remove() {
+  # undeploy the web application before its files go away
+  rm -f /etc/tomcat10/Catalina/localhost/betterguac.xml /etc/tomcat10/Catalina/localhost/guacamole.xml
+  if grep -qs 'managed by the betterguac package' /etc/tomcat10/Catalina/localhost/ROOT.xml; then
+    rm -f /etc/tomcat10/Catalina/localhost/ROOT.xml
+  fi
+  if [ -d /run/systemd/system ]; then
+    # stop only guacd: stopping betterguac.target would also stop Tomcat and
+    # MariaDB (PartOf), which other apps on this machine may use
+    systemctl disable --quiet betterguac.target betterguac-guacd.service >/dev/null 2>&1 || true
+    systemctl stop betterguac-guacd.service >/dev/null 2>&1 || true
+  fi
+}
+
+post_remove() {
+  # the Tomcat 10 copy of the web application, built on this machine
+  rm -rf /var/cache/betterguac
+  if [ -d /run/systemd/system ]; then
+    systemctl daemon-reload >/dev/null 2>&1 || true
+    systemctl try-restart tomcat10.service >/dev/null 2>&1 || true
+  fi
+  cat <<'EOF'
+betterguac: removed the program files. Your settings and keys (/etc/betterguac),
+            /var/lib/betterguac and the betterguac databases were kept.
+            To remove those too, see "Removing" in the BetterGuac README.
+EOF
+}

@@ -1,0 +1,186 @@
+# Maintainer: Robert Debs <robert@robertdebs.com>
+#
+# BetterGuac for Arch Linux: guacd built from the Apache Guacamole 1.6.0
+# source with BetterGuac's patches, the stock Guacamole 1.6.0 web
+# application and extensions (converted for Tomcat 10 on the installed
+# machine), MariaDB, MFA, YAML sync and the Activity log.
+# Same build and license approach as the .deb: stock upstream jars,
+# change notices in every patched file, SOURCES in
+# /usr/share/betterguac/legal/.
+
+pkgname=betterguac
+_bgver=1.6.0-bg10
+pkgver=1.6.0+bg10
+pkgrel=1
+pkgdesc='Remote access gateway (SSH, RDP, VNC) based on Apache Guacamole, with MFA, YAML sync and an activity log'
+arch=('x86_64' 'aarch64')
+url='https://betterguac.org'
+license=('Apache-2.0')
+_mjc=2.7.15
+_jem=1.0.13
+depends=(
+  'tomcat10'
+  'java-runtime-headless>=17'
+  'mariadb'
+  'python'
+  'python-pymysql'
+  'python-yaml'
+  'ttf-dejavu'
+  'cairo'
+  'pango'
+  'libjpeg-turbo'
+  'libpng'
+  'libwebp'
+  'util-linux-libs'
+  'openssl'
+  'freerdp'
+  'libssh2'
+  'libvncserver'
+  'libpulse'
+  'libvorbis'
+  'libwebsockets'
+  'ffmpeg'
+)
+makedepends=('jdk21-openjdk' 'zip' 'unzip' 'patch')
+conflicts=('guacamole-server')
+backup=('etc/betterguac/guacd.conf')
+install=betterguac.install
+options=('!lto' '!debug')
+source=(
+  "BetterGuac-${_bgver}.tar.gz::https://github.com/BondJamesB07/BetterGuac/archive/refs/tags/v${_bgver}.tar.gz"
+  "https://archive.apache.org/dist/guacamole/1.6.0/source/guacamole-server-1.6.0.tar.gz"
+  "https://archive.apache.org/dist/guacamole/1.6.0/binary/guacamole-auth-jdbc-1.6.0.tar.gz"
+  "https://archive.apache.org/dist/guacamole/1.6.0/binary/guacamole-auth-totp-1.6.0.tar.gz"
+  "https://repo1.maven.org/maven2/org/mariadb/jdbc/mariadb-java-client/${_mjc}/mariadb-java-client-${_mjc}.jar"
+  "mariadb-connector-j-${_mjc}-LICENSE::https://raw.githubusercontent.com/mariadb-corporation/mariadb-connector-j/${_mjc}/LICENSE"
+  "https://archive.apache.org/dist/tomcat/jakartaee-migration/v${_jem}/binaries/jakartaee-migration-${_jem}-bin.tar.gz"
+  'javax2jakarta'
+  'README.Arch'
+  'SOURCES.arch'
+)
+noextract=("mariadb-java-client-${_mjc}.jar" 'guacamole-server-1.6.0.tar.gz'
+           'guacamole-auth-jdbc-1.6.0.tar.gz' 'guacamole-auth-totp-1.6.0.tar.gz')
+sha256sums=('9a0cd2923247eb40c4a0ead96d97c4bebf6c4f2b7262714ac9cdf64b210462a6'
+            '8bc45675da96d7b6f39728160181e3d4ff3c08f460f6d26de5805b642bf13f2b'
+            '97bc5fd3d67d25c0e98a475d1dfd308a037859f549fac47171c723b7a7039366'
+            '0202c197d3b4e59e69b4dde2a80906adf5f03a497748b74ad3d599022e26f347'
+            '216310985509ad41bf94e649f520d124b2ad4bb8a40d865ed6606de528bbb0ab'
+            'c8cfa082f122323774057c2808eb7e796703bde9459fa04ff6f2c9cc25f74eff'
+            '430707b9c65356beac09347cddb600f7289c0bfbc6f98f131c34edce55dcd26f'
+            'dc1ed4a63255ffc7a245776bce1b2db986b9847eec89d5d4f6a502a977ea81a8'
+            'b9bb1038fc3c6f591d6c03b37ce7b61852c3ca2d465f58a0f356a81ec10a448c'
+            '44c11853603626fd7524a6d2bc80e33cb181beedeb2f34ba286e01762a4ede8c')
+
+_gprefix=/usr/lib/betterguac/guacd
+
+prepare() {
+  cd "BetterGuac-${_bgver}"
+  # the build scripts take the upstream release archives from upstream/
+  ln -sf "$srcdir"/guacamole-server-1.6.0.tar.gz "$srcdir"/guacamole-auth-jdbc-1.6.0.tar.gz \
+         "$srcdir"/guacamole-auth-totp-1.6.0.tar.gz upstream/
+  rm -rf build && mkdir -p build
+  tar -xzf upstream/guacamole-server-1.6.0.tar.gz -C build
+  cd build/guacamole-server-1.6.0
+  patch -p1 < ../../patches/0001-rdp-gdi-init-in-postconnect.patch
+  patch -p1 < ../../patches/0002-guacd-config-file-option.patch
+  # prominent change notice in each file the patches modify (Apache License 2.0, section 4b)
+  local f p
+  for f in $(sed -n 's#^+++ b/##p' ../../patches/0001-*.patch ../../patches/0002-*.patch | sort -u); do
+    p=$(grep -l "^+++ b/$f" ../../patches/000[12]-*.patch | xargs -n1 basename | tr '\n' ' ' | sed 's/ $//')
+    printf '/* Modified by BetterGuac, 2026 (patches/%s in the BetterGuac source).\n * Original: Apache Guacamole 1.6.0, The Apache Software Foundation. */\n' "$p" \
+      | cat - "$f" > "$f.bgtmp" && mv "$f.bgtmp" "$f"
+    grep -q 'Modified by BetterGuac' "$f"
+  done
+}
+
+build() {
+  cd "BetterGuac-${_bgver}/build/guacamole-server-1.6.0"
+  export PATH="/usr/lib/jvm/java-21-openjdk/bin:$PATH"
+  ./configure \
+    --prefix="$_gprefix" \
+    --sysconfdir=/etc/betterguac \
+    --disable-static \
+    --disable-guacenc \
+    --disable-guaclog \
+    --without-telnet \
+    --with-guacd-conf=/etc/betterguac/guacd.conf \
+    --with-freerdp-plugin-dir=/usr/lib/freerdp3 \
+    CFLAGS="$CFLAGS -Wno-deprecated-declarations -Wno-error" \
+    LDFLAGS="$LDFLAGS -Wl,-rpath,$_gprefix/lib"
+  make
+  cd ../..
+  sh debian/build-web.sh "$PWD/build" "$pkgver-$pkgrel"
+}
+
+package() {
+  cd "BetterGuac-${_bgver}"
+  local B="$PWD/build" P="$pkgdir"
+  make -C build/guacamole-server-1.6.0 install DESTDIR="$P"
+  # headers, libtool archives and man pages of the private guacd are not needed
+  rm -rf "$P$_gprefix/include" "$P$_gprefix/share" "$P$_gprefix/bin"
+  find "$P" -name '*.la' -delete
+  # the private libguac must not register with ldconfig or clash with other packages
+  test -x "$P$_gprefix/sbin/guacd"
+
+  # web application, extensions, setup helper, YAML sync, config and legal files:
+  # the same script the .deb uses
+  sh debian/install-web.sh "$B" "$P"
+  # Arch: /usr/sbin is a symlink to /usr/bin
+  install -d "$P/usr/bin"
+  mv "$P"/usr/sbin/* "$P/usr/bin/"
+  rmdir "$P/usr/sbin"
+
+  # systemd units (shared with the .deb)
+  install -Dm644 debian/betterguac.betterguac-guacd.service "$P/usr/lib/systemd/system/betterguac-guacd.service"
+  install -Dm644 debian/betterguac.betterguac.target "$P/usr/lib/systemd/system/betterguac.target"
+  sed -i 's#file:///usr/share/doc/betterguac/README.Debian#file:///usr/share/doc/betterguac/README.Arch#' \
+    "$P/usr/lib/systemd/system/betterguac-guacd.service" "$P/usr/lib/systemd/system/betterguac.target"
+
+  # MariaDB Connector/J (LGPL-2.1): Arch has no package for it, so the stock
+  # jar from Maven Central is shipped unmodified, with its license
+  install -Dm644 "$srcdir/mariadb-java-client-${_mjc}.jar" "$P/usr/share/betterguac/java/mariadb-java-client-${_mjc}.jar"
+  ln -s "mariadb-java-client-${_mjc}.jar" "$P/usr/share/betterguac/java/mariadb-java-client.jar"
+  ln -sfn /usr/share/betterguac/java/mariadb-java-client.jar "$P/etc/betterguac/lib/mariadb-java-client.jar"
+  install -Dm644 "$srcdir/mariadb-connector-j-${_mjc}-LICENSE" "$P/usr/share/betterguac/legal/mariadb-connector-j/LICENSE"
+
+  # Apache Tomcat migration tool for Jakarta EE (Apache-2.0; its lib/ also has
+  # the Eclipse Equinox OSGi jar, EPL-2.0): Arch has no package for it, so the
+  # upstream binary release is shipped unmodified
+  local J="$srcdir/jakartaee-migration-${_jem}"
+  install -d "$P/usr/share/betterguac/jakartaee-migration/lib"
+  install -m644 "$J"/lib/*.jar "$P/usr/share/betterguac/jakartaee-migration/lib/"
+  install -Dm644 "$J/LICENSE.txt" "$P/usr/share/betterguac/legal/jakartaee-migration/LICENSE.txt"
+  install -m644 "$J/NOTICE.txt" "$J/README.md" "$P/usr/share/betterguac/legal/jakartaee-migration/"
+  install -Dm755 "$srcdir/javax2jakarta" "$P/usr/lib/betterguac/javax2jakarta"
+
+  # Arch specifics in the shared setup helper and sync tool
+  local S="$P/usr/lib/betterguac/betterguac-setup"
+  sed -i \
+    -e 's/^TOMCAT_GROUP=tomcat$/TOMCAT_GROUP=tomcat10/' \
+    -e 's#tool=$(command -v javax2jakarta || true)#tool=$(command -v /usr/lib/betterguac/javax2jakarta || true)#' \
+    -e 's#install the tomcat-jakartaee-migration package#reinstall the betterguac package#' \
+    -e "s#dpkg-query -W -f='\${Version}' tomcat-jakartaee-migration 2>/dev/null || true#echo jakartaee-migration-${_jem}#" \
+    -e "s#dpkg-query -W -f='\${Version}' betterguac 2>/dev/null || echo \"\${BETTERGUAC_VERSION:-unknown}\"#echo \"${pkgver}-${pkgrel}\"#" \
+    -e 's#then run: sudo dpkg --configure -a#then run: sudo betterguac-admin configure#' \
+    -e "s#with Debian's Apache#with the Apache#" \
+    -e 's#hostname -I 2>/dev/null#{ hostname -I 2>/dev/null || ip -4 -o route get 1.1.1.1 2>/dev/null | sed -n "s/.* src \\([0-9.]*\\).*/\\1/p"; }#' \
+    "$S"
+  grep -q '^TOMCAT_GROUP=tomcat10$' "$S"
+  grep -q '/usr/lib/betterguac/javax2jakarta' "$S"
+  grep -q "echo jakartaee-migration-${_jem}" "$S"
+  grep -q "echo \"${pkgver}-${pkgrel}\"" "$S"
+  ! grep -q 'dpkg' "$S"
+  sed -i 's#chown root:tomcat %s#chown root:tomcat10 %s#' "$P/usr/lib/betterguac/sync/betterguac_sync.py"
+  grep -q 'root:tomcat10' "$P/usr/lib/betterguac/sync/betterguac_sync.py"
+
+  # docs: README.Arch instead of README.Debian, and where the Arch-only parts come from
+  rm -f "$P/usr/share/doc/betterguac/README.Debian"
+  install -m644 "$srcdir/README.Arch" "$P/usr/share/doc/betterguac/README.Arch"
+  local s
+  for s in "$P/usr/share/doc/betterguac/SOURCES" "$P/usr/share/betterguac/legal/SOURCES"; do
+    { echo; cat "$srcdir/SOURCES.arch"; } >> "$s"
+  done
+  [ -e "$P/usr/share/doc/betterguac/copyright" ] || install -Dm644 debian/copyright "$P/usr/share/doc/betterguac/copyright"
+  install -Dm644 LICENSE "$P/usr/share/licenses/$pkgname/LICENSE"
+  install -m644 files/NOTICE "$P/usr/share/licenses/$pkgname/NOTICE"
+}

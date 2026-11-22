@@ -1,0 +1,60 @@
+BetterGuac on Arch Linux
+========================
+
+Install
+  sudo pacman -U betterguac-1.6.0+bg10-1-x86_64.pkg.tar.zst     (or -aarch64)
+
+  pacman pulls in Tomcat 10, MariaDB, a Java runtime and the guacd
+  libraries. The install then:
+    - initialises MariaDB in /var/lib/mysql if it has no data yet
+    - creates the betterguac databases and their accounts
+    - converts the web application for Tomcat 10 (javax to jakarta) into
+      /var/cache/betterguac
+    - enables and starts mariadb, tomcat10 and betterguac.target
+    - writes the first admin's email and password to
+      /etc/betterguac/initial-admin.txt
+
+  Then open http://<this machine>:8080/betterguac/ and sign in with the
+  details in that file. The setup admin is not asked for MFA; every other
+  admin enrolls on first sign-in. Delete initial-admin.txt once you have
+  your own admin account.
+
+Where things are
+  Settings and keys ...... /etc/betterguac (guacamole.properties, sync.env,
+                           betterguac.yaml, keys/, trusted-proxies)
+  SSH keys ............... /etc/betterguac/keys, owned root:tomcat10, mode 640
+                           (Arch's Tomcat runs as the tomcat10 user)
+  guacd .................. betterguac-guacd.service, listens on 127.0.0.1:4822
+  Web app ................ tomcat10.service, port 8080 (/etc/tomcat10/server.xml)
+  Database backups ....... /var/lib/betterguac/backups (before each schema update)
+  Licenses and sources ... /usr/share/betterguac/legal/
+
+Tomcat's own example apps
+  Arch's tomcat10 package also deploys Tomcat's docs, examples, manager and
+  host-manager apps on port 8080. BetterGuac does not use them. If this
+  machine only runs BetterGuac, you can stop Tomcat from loading them by
+  setting deployOnStartup="false" and autoDeploy="false" on the <Host> in
+  /etc/tomcat10/server.xml (BetterGuac is deployed from
+  /etc/tomcat10/Catalina/localhost/ and keeps working), or block them in
+  your reverse proxy.
+
+Commands
+  sudo betterguac-admin status
+  sudo betterguac-admin migrate [--status]
+  sudo betterguac-admin configure        re-run setup (safe to repeat)
+  sudo betterguac-sync check|plan|apply /etc/betterguac/betterguac.yaml
+
+Upgrade
+  sudo pacman -U <newer package>. The database is backed up and updated
+  automatically.
+
+Remove
+  sudo pacman -R betterguac removes the program files and keeps
+  /etc/betterguac, /var/lib/betterguac and the databases. To remove those
+  too, back up first, then:
+    sudo mariadb -e "DROP DATABASE betterguac; DROP DATABASE betterguac_yamlsync;
+      DROP USER 'betterguac'@'localhost'; DROP USER 'betterguac_sync'@'localhost';"
+    sudo rm -rf /etc/betterguac /var/lib/betterguac
+
+RHEL, Rocky, Alma and CentOS
+  There is no RPM. Use the Docker image: bondjamesb07/betterguac.
