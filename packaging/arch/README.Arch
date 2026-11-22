@@ -45,8 +45,8 @@ Tomcat's own example apps
           unpackWARs="true" autoDeploy="true"
           deployIgnore="^(docs|examples|manager|host-manager)$">
 
-  then run: sudo systemctl restart tomcat10. Those paths then go to the
-  BetterGuac sign-in page. Do not set deployOnStartup="false": Tomcat would
+  then run: sudo systemctl restart tomcat10. Tomcat then skips those apps,
+  and their paths redirect into /betterguac/. Do not set deployOnStartup="false": Tomcat would
   then also skip BetterGuac, which is deployed from
   /etc/tomcat10/Catalina/localhost/, and every page returns 404.
 
