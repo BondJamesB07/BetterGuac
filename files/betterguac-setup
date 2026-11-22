@@ -19,6 +19,8 @@ SYNC_USER=betterguac_sync
 TOMCAT_GROUP=tomcat
 CTXDIR=/etc/tomcat10/Catalina/localhost
 CONTEXT=$CTXDIR/betterguac.xml
+JAVAEE=$SHARE/javaee
+WEBCACHE=/var/cache/betterguac
 
 say()  { echo "betterguac: $*"; }
 die()  { echo "betterguac: error: $*" >&2; exit 1; }
@@ -199,9 +201,78 @@ sync_instance_and_yaml() {
     fi
 }
 
+# ------------------------------------------------------ web application for Tomcat 10
+# The package ships the web application and extensions as built for javax.*,
+# with their third-party libraries (some under the EPL and CDDL) unmodified.
+# They are converted to jakarta.* here, on this machine, with Debian's Apache
+# Tomcat migration tool: the same conversion Tomcat 10 applies to an
+# application placed in its webapps-javaee folder. The result lives in
+# /var/cache/betterguac and is rebuilt whenever the shipped files change.
+prepare_webapp() {
+    local tool stamp new tmp j
+    tool=$(command -v javax2jakarta || true)
+    [ -n "$tool" ] || die "javax2jakarta is missing (install the tomcat-jakartaee-migration package)"
+    [ -f "$JAVAEE/guacamole.war" ] || die "$JAVAEE/guacamole.war is missing; reinstall the betterguac package"
+    stamp=$( { (cd "$JAVAEE" && find . -type f | LC_ALL=C sort | xargs sha256sum); \
+               dpkg-query -W -f='${Version}' tomcat-jakartaee-migration 2>/dev/null || true; } | sha256sum | cut -d' ' -f1)
+    if [ -f "$WEBCACHE/.stamp" ] && [ "$(cat "$WEBCACHE/.stamp")" = "$stamp" ] \
+       && [ -f "$WEBCACHE/webapp/WEB-INF/web.xml" ]; then
+        return 0
+    fi
+    say "preparing the web application for Tomcat 10 (javax to jakarta, on this machine)"
+    install -d -m 0755 "$WEBCACHE"
+    tmp=$(mktemp -d "$WEBCACHE/.new.XXXXXX")
+    chmod 0755 "$tmp"
+    mkdir -p "$tmp/webapp" "$tmp/extensions"
+    "$tool" -profile=TOMCAT "$JAVAEE/guacamole.war" "$tmp/guacamole.war" >"$tmp/convert.log" 2>&1 \
+        || { cat "$tmp/convert.log" >&2; rm -rf "$tmp"; die "converting the web application failed"; }
+    for j in "$JAVAEE"/extensions/*.jar; do
+        "$tool" -profile=TOMCAT "$j" "$tmp/extensions/$(basename "$j")" >>"$tmp/convert.log" 2>&1 \
+            || { cat "$tmp/convert.log" >&2; rm -rf "$tmp"; die "converting $(basename "$j") failed"; }
+    done
+    python3 - "$tmp/guacamole.war" "$tmp/webapp" <<'PYEOF' || { rm -rf "$tmp"; die "unpacking the web application failed"; }
+import sys, zipfile
+zipfile.ZipFile(sys.argv[1]).extractall(sys.argv[2])
+PYEOF
+    rm -rf "$tmp/guacamole.war" "$tmp/webapp/META-INF/maven" "$tmp/convert.log"
+    find "$tmp" -type d -exec chmod 0755 {} +
+    find "$tmp" -type f -exec chmod 0644 {} +
+    rm -rf "$WEBCACHE/webapp.old" "$WEBCACHE/extensions.old"
+    [ -d "$WEBCACHE/webapp" ] && mv "$WEBCACHE/webapp" "$WEBCACHE/webapp.old"
+    [ -d "$WEBCACHE/extensions" ] && mv "$WEBCACHE/extensions" "$WEBCACHE/extensions.old"
+    mv "$tmp/webapp" "$WEBCACHE/webapp"
+    mv "$tmp/extensions" "$WEBCACHE/extensions"
+    rm -rf "$tmp" "$WEBCACHE/webapp.old" "$WEBCACHE/extensions.old"
+    echo "$stamp" > "$WEBCACHE/.stamp"
+    # GUACAMOLE_HOME links to the converted extensions (the package ships them;
+    # this also repairs a copied or restored /etc/betterguac)
+    install -d -m 0755 "$CONF/extensions"
+    for j in "$WEBCACHE"/extensions/*.jar; do
+        ln -sfn "$j" "$CONF/extensions/$(basename "$j")"
+    done
+    for j in "$CONF"/extensions/*.jar; do
+        if [ -L "$j" ] && [ ! -e "$j" ]; then rm -f "$j"; fi
+    done
+}
+
 setup_tomcat() {
     install -d -m 0755 "$(dirname "$CONTEXT")"
     install -m 0644 "$SHARE/templates/context.xml.in" "$CONTEXT"
+    # optional: the proxies whose X-Forwarded-For is trusted, as one Tomcat
+    # internalProxies regular expression in /etc/betterguac/trusted-proxies
+    # (default when absent: loopback and private addresses)
+    if [ -s "$CONF/trusted-proxies" ]; then
+        python3 - "$CONTEXT" "$CONF/trusted-proxies" <<'PYEOF' || say "warning: $CONF/trusted-proxies was not applied"
+import sys
+from xml.sax.saxutils import quoteattr
+ctx, src = sys.argv[1], sys.argv[2]
+rx = open(src).read().strip()
+x = open(ctx).read()
+mark = 'remoteIpHeader="X-Forwarded-For"'
+assert x.count(mark) == 1
+open(ctx, "w").write(x.replace(mark, "internalProxies=" + quoteattr(rx) + "\n           " + mark, 1))
+PYEOF
+    fi
     # old /guacamole bookmarks go to /betterguac
     install -m 0644 "$SHARE/templates/redirect-context.xml.in" "$CTXDIR/guacamole.xml"
     # the bare server address too, unless something else already owns it
@@ -309,6 +380,7 @@ cmd_configure() {
     if [ "$fresh" = yes ]; then migrate_schema --no-backup; else migrate_schema; fi
     create_admin
     setup_yaml_sync
+    prepare_webapp
     setup_tomcat
     say "BetterGuac is at $(url)"
 }
@@ -356,5 +428,6 @@ case "${1:-}" in
     status) cmd_status ;;
     reset-password) shift; cmd_reset_password "$@" ;;
     migrate) shift; cmd_migrate "$@" ;;
-    *) echo "usage: betterguac-admin {status|reset-password <username>|migrate [--status]|setup}" >&2; exit 2 ;;
+    webapp) [ "$(id -u)" = 0 ] || die "run this as root"; prepare_webapp ;;
+    *) echo "usage: betterguac-admin {status|reset-password <username>|migrate [--status]|setup|webapp}" >&2; exit 2 ;;
 esac

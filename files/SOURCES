@@ -1,0 +1,55 @@
+Where to get the source code of BetterGuac and what it ships
+=============================================================
+
+BetterGuac itself
+  https://github.com/BondJamesB07/BetterGuac
+  Every release is tagged (v1.6.0-bg10 for this release). The tag holds the
+  BetterGuac code, the patches applied to Apache Guacamole and the build
+  scripts that produce the .deb and Docker image.
+
+Apache Guacamole 1.6.0 (Apache License 2.0)
+  https://guacamole.apache.org/releases/1.6.0/
+  https://archive.apache.org/dist/guacamole/1.6.0/source/
+  guacamole-server-1.6.0.tar.gz (guacd), guacamole-client-1.6.0.tar.gz (the
+  web application), guacamole-auth-jdbc-1.6.0.tar.gz and
+  guacamole-auth-totp-1.6.0.tar.gz. BetterGuac's changes are in patches/ in
+  the BetterGuac source and listed in NOTICE.
+
+Third-party Java libraries inside the web application
+  The Apache Guacamole web application (guacamole.war) bundles libraries
+  under their own licenses. Their licenses are in META-INF/LICENSE and
+  META-INF/bundled/ inside the WAR. These are shipped unmodified, as they
+  come in the Apache Guacamole 1.6.0 release. The ones under the Eclipse
+  Public License 2.0 or the CDDL 1.1, and where their source is:
+    Eclipse Jersey 2.46 ........ https://github.com/eclipse-ee4j/jersey (tag 2.46)
+    Eclipse HK2 2.6.1 .......... https://github.com/eclipse-ee4j/glassfish-hk2 (tag 2.6.1)
+    Jakarta Annotations 1.3.5 .. https://github.com/jakartaee/common-annotations-api (tag 1.3.5)
+    Jakarta Activation 1.2.2 ... https://github.com/jakartaee/jaf-api (tag 1.2.2)
+    Jakarta RESTful WS 2.1.6 ... https://github.com/jakartaee/rest (tag 2.1.6)
+    Jakarta Inject (HK2) 2.6.1 . https://github.com/eclipse-ee4j/glassfish-hk2 (tag 2.6.1)
+    OSGi Resource Locator 1.0.3  https://github.com/eclipse-ee4j/glassfish-hk2-extra (tag 1.0.3-RELEASE)
+    JSR-250 API 1.0 ............ https://repo1.maven.org/maven2/javax/annotation/jsr250-api/1.0/
+    Logback 1.3.15 (EPL 1.0 /
+      LGPL 2.1) ................ https://github.com/qos-ch/logback (tag v_1.3.15)
+  Source jars for all of them are also on Maven Central,
+  https://repo1.maven.org/maven2/, next to each library's binary jar.
+
+  For Tomcat 10, betterguac-setup converts the WAR and the extensions from
+  javax.* to jakarta.* on the machine where BetterGuac is installed, with
+  Debian's Apache Tomcat migration tool (package tomcat-jakartaee-migration,
+  Apache License 2.0). The converted copy lives in /var/cache/betterguac and
+  is rebuilt by: sudo betterguac-admin webapp
+
+Debian and Ubuntu packages (Docker image)
+  The Docker image is built on debian:trixie-slim and contains Debian
+  packages under their own licenses, some under the GNU GPL (for example
+  mariadb-server, GPL-2, and libvncclient1, GPL-2+). The image lists every
+  package with its exact version in /usr/share/doc/betterguac/sbom/:
+    packages.tsv           package, version, architecture, source package
+    betterguac.spdx.json   the same as an SPDX 2.3 document
+  Each package's license is in /usr/share/doc/<package>/copyright in the
+  image. The corresponding source code of each package and version is
+  available from the Debian archive:
+    https://deb.debian.org/debian/pool/main/ (and https://snapshot.debian.org/
+    for exact past versions), or with: apt-get source <package>=<version>
+  Questions about the source: https://github.com/BondJamesB07/BetterGuac/issues

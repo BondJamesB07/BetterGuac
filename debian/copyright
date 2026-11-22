@@ -1,22 +1,48 @@
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: BetterGuac
 Upstream-Contact: Robert Debs <robert@robertdebs.com>
-Source: https://guacamole.apache.org/
-Comment: BetterGuac is based on Apache Guacamole 1.6.0. The guacd source,
- web application and the JDBC and TOTP extensions are the Apache Guacamole
- 1.6.0 releases, with the BetterGuac changes listed in
- /usr/share/doc/betterguac/NOTICE.
+Source: https://github.com/BondJamesB07/BetterGuac
+Comment: BetterGuac is based on Apache Guacamole 1.6.0
+ (https://guacamole.apache.org/). The guacd source, the web application and
+ the JDBC and TOTP extensions are the Apache Guacamole 1.6.0 releases from
+ The Apache Software Foundation, with the BetterGuac changes listed in
+ /usr/share/doc/betterguac/NOTICE. Where to get the source of everything in
+ this package: /usr/share/doc/betterguac/SOURCES.
 
 Files: *
-Copyright: 2026 Robert Debs
+Copyright: 2016-2026 The Apache Software Foundation
 License: Apache-2.0
+Comment: Apache Guacamole 1.6.0: guacd and its protocol plugins, the web
+ application (shipped as /usr/share/betterguac/javaee/guacamole.war) and the
+ guacamole-auth-jdbc-mysql and guacamole-auth-totp extensions. The files the
+ BetterGuac patches change carry a notice saying so. The web application
+ bundles third-party libraries under their own licenses (including the
+ Eclipse Public License 2.0 and CDDL 1.1); they are shipped unmodified and
+ listed in the LICENSE file inside the WAR (META-INF/LICENSE) and in
+ /usr/share/doc/betterguac/LICENSE.
 
 Files: upstream/*
-Copyright: The Apache Software Foundation
+Copyright: 2016-2026 The Apache Software Foundation
 License: Apache-2.0
-Comment: Apache Guacamole 1.6.0. The web application bundles third-party
- libraries under their own licenses; see the LICENSE file inside
- /usr/share/betterguac/webapp/META-INF and /usr/share/doc/betterguac/LICENSE.
+Comment: The unmodified Apache Guacamole 1.6.0 release files.
+
+Files: addon/*
+       addon-java/*
+       files/*
+       debian/*
+       docker/*
+       patches/*
+       schema/betterguac/*
+       tests/*
+       yaml-sync/*
+       README.md
+Copyright: 2026 Robert Debs
+License: Apache-2.0
+Comment: BetterGuac's own work: the interface add-on, the profile and
+ Activity extension, the YAML sync tool, the setup and packaging scripts,
+ the Docker files, the schema migrations, and the patches applied to Apache
+ Guacamole 1.6.0. The patches are BetterGuac's; the files they modify remain
+ copyright The Apache Software Foundation.
 
 License: Apache-2.0
  Licensed under the Apache License, Version 2.0 (the "License");

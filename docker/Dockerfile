@@ -1,4 +1,4 @@
-# BetterGuac 1.6.0-bg9 image (package 1.6.0+bg9) template — native arm64 and amd64 (single container)
+# BetterGuac 1.6.0-bg10 image (package 1.6.0+bg10) template — native arm64 and amd64 (single container)
 #
 # No per-machine edits: the architecture is detected at build time from
 # Docker's TARGETARCH and the matching .deb is taken from
@@ -6,16 +6,17 @@
 #
 # The .deb is deliberately NOT shipped here. Put the package for the machine
 # you build on in ./debs/ first, e.g.
-#   debs/betterguac_1.6.0+bg9_arm64.deb   (arm64 / bondlab)
-#   debs/betterguac_1.6.0+bg9_amd64.deb   (amd64 / proxlab1)
+#   debs/betterguac_1.6.0+bg10_arm64.deb   (arm64 / bondlab)
+#   debs/betterguac_1.6.0+bg10_amd64.deb   (amd64 / proxlab1)
 # See README.md ("Put the .deb in debs/").
 FROM debian:trixie-slim
 
 LABEL org.opencontainers.image.title="BetterGuac" \
-      org.opencontainers.image.version="1.6.0-bg9" \
+      org.opencontainers.image.version="1.6.0-bg10" \
       org.opencontainers.image.description="BetterGuac remote access (based on Apache Guacamole 1.6.0), single container" \
-      org.opencontainers.image.licenses="Apache-2.0" \
-      io.betterguac.package-version="1.6.0+bg9" \
+      org.opencontainers.image.licenses="Apache-2.0 AND (see /usr/share/doc/betterguac/sbom)" \
+      org.opencontainers.image.source="https://github.com/BondJamesB07/BetterGuac" \
+      io.betterguac.package-version="1.6.0+bg10" \
       org.opencontainers.image.revision="5d0de1c89a3884762e81eb906fe4fff349cbe390"
 
 ARG DEBIAN_FRONTEND=noninteractive
@@ -26,7 +27,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 # through BuildKit's default platform. If it were ever empty, the COPY below
 # fails with a clear message; there is no silent cross-architecture build.
 ARG TARGETARCH
-ARG BETTERGUAC_VERSION=1.6.0+bg9
+ARG BETTERGUAC_VERSION=1.6.0+bg10
 
 # Build-time package workaround (see README.md "Package postinst workaround"):
 #  - policy-rc.d blocks invoke-rc.d, so no service is started at install time
@@ -72,7 +73,7 @@ RUN set -eux; \
         libpulse0 libssh2-1t64 libssl3t64 libtelnet2 libuuid1 \
         libvncclient1 libwebp7 libwebsockets19t64 libwinpr3-3 \
         fonts-dejavu-core libmariadb-java python3-pymysql python3-yaml \
-        tomcat10; \
+        tomcat10 tomcat-jakartaee-migration; \
     mkdir -p /etc/betterguac/extensions /etc/betterguac/lib /var/lib/betterguac; \
     # Unpack + postinst. The postinst is expected to fail (no MariaDB yet).
     dpkg -i --force-depends /tmp/betterguac.deb \
@@ -86,8 +87,8 @@ RUN set -eux; \
     # /usr/lib/x86_64-linux-gnu/freerdp3 on amd64); the freerdp libraries
     # there are found through the default multiarch loader path, so nothing
     # in the scripts hardcodes the processor name.
-    for jar in /usr/share/betterguac/extensions/*.jar; do \
-        ln -sfn "$jar" "/etc/betterguac/extensions/$(basename "$jar")"; \
+    for jar in /usr/share/betterguac/javaee/extensions/*.jar; do \
+        ln -sfn "/var/cache/betterguac/extensions/$(basename "$jar")" "/etc/betterguac/extensions/$(basename "$jar")"; \
     done; \
     ln -sfn /usr/share/java/mariadb-java-client.jar /etc/betterguac/lib/mariadb-java-client.jar; \
     # Start MariaDB for the duration of the build and finish the package setup.
@@ -107,9 +108,24 @@ RUN set -eux; \
           /etc/betterguac/betterguac.yaml /etc/betterguac/initial-admin.txt \
           /var/lib/betterguac/admin-user; \
     rm -rf /var/lib/mysql; \
+    # The web application is converted to jakarta.* when the container starts
+    # (betterguac-tomcat-run), not baked into the image: the image ships the
+    # Apache Guacamole WAR and its third-party libraries unmodified.
+    rm -rf /var/cache/betterguac; \
     rm -rf /var/lib/apt/lists/* /tmp/mariadb-build.log; \
     # make sure nothing from the build run can be mistaken for runtime state
     test ! -e /etc/betterguac/guacamole.properties
+
+# SBOM: every Debian package in the image, with version and source package,
+# as a table and as SPDX 2.3, plus where to get the source (SOURCES).
+COPY docker/make-sbom.py /usr/local/lib/betterguac-make-sbom.py
+RUN set -eux; \
+    install -d -m 0755 /usr/share/doc/betterguac/sbom; \
+    python3 /usr/local/lib/betterguac-make-sbom.py /usr/share/doc/betterguac/sbom; \
+    rm -f /usr/local/lib/betterguac-make-sbom.py; \
+    test -s /usr/share/doc/betterguac/sbom/packages.tsv; \
+    test -s /usr/share/doc/betterguac/sbom/betterguac.spdx.json; \
+    test -s /usr/share/doc/betterguac/SOURCES
 
 COPY docker/supervisord.conf /etc/supervisor/conf.d/betterguac.conf
 COPY docker/entrypoint.sh /usr/local/bin/betterguac-entrypoint

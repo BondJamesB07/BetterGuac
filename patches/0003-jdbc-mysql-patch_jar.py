@@ -19,6 +19,13 @@ NAME2 = "org/apache/guacamole/auth/jdbc/user/UserRecordMapper.xml"
 BAD2 = "guacamole_connection_history.user_id IN ("
 GOOD2 = "guacamole_user_history.user_id IN ( <!-- BetterGuac fix: upstream 1.6.0 names the wrong table here -->"
 
+NOTICE_XML = ("<!-- Modified by BetterGuac, 2026 (patches/0003-jdbc-mysql-patch_jar.py). "
+              "Original: Apache Guacamole 1.6.0, The Apache Software Foundation, "
+              "Apache License 2.0. The changes are marked \"BetterGuac fix\" below. -->\n")
+def stamp(text):
+    assert text.count("<mapper ") == 1, "unexpected mapper file"
+    return text.replace("<mapper ", NOTICE_XML + "<mapper ", 1)
+
 zin = zipfile.ZipFile(src)
 zout = zipfile.ZipFile(dst, "w")
 done = False
@@ -27,11 +34,11 @@ for info in zin.infolist():
     data = zin.read(info.filename)
     if info.filename == NAME:
         text = data.decode("utf-8")
-        data = fix(text).encode("utf-8")
+        data = stamp(fix(text)).encode("utf-8")
     elif info.filename == NAME2:
         text = data.decode("utf-8")
         assert text.count(BAD2) == 1, "unexpected UserRecordMapper.xml content"
-        data = text.replace(BAD2, GOOD2).encode("utf-8")
+        data = stamp(text.replace(BAD2, GOOD2)).encode("utf-8")
         done2 = True
         done = True
     zout.writestr(info, data)

@@ -1,5 +1,9 @@
 BetterGuac: add a -c CONFIG_FILE option to guacd.
 
+Modified by BetterGuac, 2026. Changes these Apache Guacamole 1.6.0 files
+(The Apache Software Foundation, Apache License 2.0); the build adds a
+change notice at the top of each.
+
 Stock guacd 1.6.0 only reads the compiled-in GUACD_CONF_FILE
 (/etc/guacamole/guacd.conf). This lets the service file point it at
 /etc/betterguac/guacd.conf instead. Without -c nothing changes. With -c the

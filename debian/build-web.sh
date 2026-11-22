@@ -1,8 +1,14 @@
 #!/bin/sh
 # Assembles the BetterGuac web application and extensions.
 #   build-web.sh <build dir> <package version>
-# Output in <build dir>/web/out: guacamole.war and the extension jars, all
-# converted from javax.* to jakarta.* for Tomcat 10.
+# Output in <build dir>/web/out: guacamole-javax.war and the extension jars.
+# They are NOT converted to jakarta.* here: the web application bundles
+# third-party libraries under the EPL and CDDL (Jersey, HK2, Jakarta
+# Annotations, Logback, JSR-250), and the package ships them unmodified.
+# betterguac-setup converts them on the installed machine with Debian's
+# Apache Tomcat migration tool (javax2jakarta, package
+# tomcat-jakartaee-migration), the same conversion Tomcat 10 applies to
+# applications placed in its webapps-javaee folder.
 set -eu
 B=$1; VER=$2; S=$(pwd)
 W=$B/web
@@ -34,6 +40,16 @@ PYEOF
 grep -q 'id="bg-boot-script"' "$IDX"
 grep -q '>BetterGuac</title>' "$IDX"
 grep -q "bg=$STAMP" "$IDX"
+# change notice inside the modified file (Apache License 2.0, section 4b)
+python3 - "$IDX" <<'PYEOF'
+import sys
+idx = sys.argv[1]; h = open(idx).read()
+note = ("<!-- Modified by BetterGuac, 2026: page title, early page colour, boot loader and "
+        "cache stamps added to the Apache Guacamole 1.6.0 index.html. See NOTICE. -->")
+assert h.count("<!doctype html>") == 1
+open(idx, "w").write(h.replace("<!doctype html>", "<!doctype html>" + note, 1))
+PYEOF
+grep -q 'Modified by BetterGuac' "$IDX"
 if [ -x "$S/patches/webapp-extra.sh" ]; then "$S/patches/webapp-extra.sh" "$W/war"; fi
 
 # --- BetterGuac UI add-on + profile/auth extension ---
@@ -42,6 +58,10 @@ javac --release 11 -nowarn -encoding UTF-8 -cp "$LIB/*" -d "$W/classes" $(find "
 cp -a "$S/addon" "$W/addon"
 rm -rf "$W/addon/com"
 cp -a "$W/classes/com" "$W/addon/com"
+# the add-on jar carries its own license and notice in case it is copied on its own
+mkdir -p "$W/addon/META-INF"
+cp "$S/LICENSE" "$W/addon/META-INF/LICENSE"
+cp "$S/files/NOTICE" "$W/addon/META-INF/NOTICE"
 (cd "$W/addon" && find . -type f | LC_ALL=C sort | sed 's#^\./##' | zip -q -X -@ "$W/ext/betterguac-ui-1.6.0.jar")
 
 # --- Database authentication (patched) and TOTP ---
@@ -50,14 +70,30 @@ tar -xzf "$S/upstream/guacamole-auth-totp-1.6.0.tar.gz" -C "$W"
 python3 "$S/patches/0003-jdbc-mysql-patch_jar.py" \
     "$W/guacamole-auth-jdbc-1.6.0/mysql/guacamole-auth-jdbc-mysql-1.6.0.jar" \
     "$W/ext/guacamole-auth-jdbc-mysql-1.6.0.jar"
+# mark the patched jar as modified in its manifest (Apache License 2.0, section 4b)
+python3 - "$W/ext/guacamole-auth-jdbc-mysql-1.6.0.jar" <<'PYEOF'
+import sys, zipfile, os, shutil
+jar = sys.argv[1]; tmp = jar + ".tmp"
+zin = zipfile.ZipFile(jar); zout = zipfile.ZipFile(tmp, "w")
+seen = False
+for info in zin.infolist():
+    data = zin.read(info.filename)
+    if info.filename == "META-INF/MANIFEST.MF":
+        seen = True
+        lines = [l for l in data.decode("utf-8").replace("\r\n", "\n").split("\n")
+                 if l and not l.startswith("Implementation-Vendor:")]
+        lines.append("Implementation-Vendor: BetterGuac (modified Apache Guacamole 1.6.0; see NOTICE)")
+        data = ("\r\n".join(lines) + "\r\n\r\n").encode("utf-8")
+    zout.writestr(info, data)
+zout.close(); zin.close()
+assert seen, "no MANIFEST.MF in the jdbc jar"
+os.replace(tmp, jar)
+PYEOF
 cp "$W/guacamole-auth-totp-1.6.0/guacamole-auth-totp-1.6.0.jar" "$W/ext/"
 mkdir -p "$W/schema"
 cp "$W"/guacamole-auth-jdbc-1.6.0/mysql/schema/*.sql "$W/schema/"
 
-# --- javax -> jakarta for Tomcat 10 (same conversion Tomcat's webapps-javaee does) ---
-(cd "$W/war" && find . -type f | LC_ALL=C sort | sed 's#^\./##' | zip -q -X -@ "$W/guacamole-javax.war")
-javax2jakarta -profile=TOMCAT "$W/guacamole-javax.war" "$W/out/guacamole.war"
-for j in "$W"/ext/*.jar; do
-    javax2jakarta -profile=TOMCAT "$j" "$W/out/$(basename "$j")"
-done
+# --- Shipped as javax.*: converted to jakarta.* on the installed machine ---
+(cd "$W/war" && find . -type f | LC_ALL=C sort | sed 's#^\./##' | zip -q -X -@ "$W/out/guacamole-javax.war")
+cp "$W"/ext/*.jar "$W/out/"
 ls -l "$W/out"

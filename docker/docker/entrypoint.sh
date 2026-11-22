@@ -33,10 +33,10 @@ if [ ! -e "$STATE/.config-seeded" ]; then
         log "seeded $CONF from the image"
     fi
     # (Re)create the extension/jar symlinks the package ships. They point at
-    # /usr/share/... so they keep working; re-creating them also repairs a
-    # partially copied volume.
-    for jar in "$PKG_SHARE"/extensions/*.jar; do
-        ln -sfn "$jar" "$CONF/extensions/$(basename "$jar")"
+    # the Tomcat 10 copy in /var/cache/betterguac, which betterguac-tomcat-run
+    # prepares (it also repairs the links in volumes from older images).
+    for jar in "$PKG_SHARE"/javaee/extensions/*.jar; do
+        ln -sfn "/var/cache/betterguac/extensions/$(basename "$jar")" "$CONF/extensions/$(basename "$jar")"
     done
     ln -sfn /usr/share/java/mariadb-java-client.jar "$CONF/lib/mariadb-java-client.jar"
     : > "$STATE/.config-seeded"

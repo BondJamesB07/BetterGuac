@@ -1,3 +1,28 @@
+betterguac (1.6.0+bg10) trixie; urgency=medium
+
+  * Activity page for administrators: sign-ins, failed sign-ins, sign-outs,
+    two-factor events, server sessions with their length, admin changes and
+    YAML sync applies, with filters, search, CSV export and 365-day
+    retention.
+  * Numbered database migrations, applied automatically on upgrade after a
+    compressed backup of the database; betterguac-admin migrate [--status].
+  * License: the Apache Guacamole WAR and its third-party libraries (EPL and
+    CDDL among them) are shipped unmodified; betterguac-setup converts them
+    from javax to jakarta on the installed machine with Debian's
+    tomcat-jakartaee-migration (new dependency; betterguac-admin webapp
+    rebuilds it). New /usr/share/doc/betterguac/SOURCES.
+  * License: debian/copyright credits The Apache Software Foundation for the
+    upstream files and Robert Debs for BetterGuac's own work.
+  * License: change notices in every patched upstream file (guacd sources,
+    index.html, the two MyBatis mapper files and the patched jar manifest).
+  * Docker image: SBOM of every Debian package (TSV and SPDX 2.3) and a
+    source notice in /usr/share/doc/betterguac/.
+  * Tomcat RemoteIpValve: behind a reverse proxy on a private address, the
+    Activity log and session history record the client's address from
+    X-Forwarded-For; /etc/betterguac/trusted-proxies overrides the list.
+
+ -- Robert Debs <robert@robertdebs.com>  Sun, 22 Nov 2026 13:30:00 +0000
+
 betterguac (1.6.0+bg9) trixie; urgency=medium
 
   * First account is a setup administrator: it signs in with the generated

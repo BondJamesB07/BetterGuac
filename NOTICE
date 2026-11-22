@@ -10,13 +10,25 @@ The Apache Software Foundation (http://www.apache.org/).
 
 BetterGuac changes to Apache Guacamole 1.6.0 in this package:
 - guacd: FreeRDP 3 graphics (GDI) set up in the post-connect callback
-  instead of before connecting, which fixes RDP crashes with FreeRDP 3.
+  instead of before connecting, which fixes RDP crashes with FreeRDP 3;
+  a -c option to read /etc/betterguac/guacd.conf. Each patched source file
+  carries a change notice when built.
 - guacamole-auth-jdbc-mysql: deleting user groups works, and the sign-in
-  history table is written correctly (bytecode patch of the 1.6.0 jar).
-- Web application: BetterGuac page title and early midnight-blue page
-  colour in index.html; javax.* converted to jakarta.* for Tomcat 10.
+  history table is written correctly (two MyBatis mapper XML files in the
+  1.6.0 jar; each carries a change notice, and the jar's manifest names
+  BetterGuac as the vendor of the modified build).
+- Web application: BetterGuac page title, early midnight-blue page colour,
+  boot loader and cache stamps in index.html (the file says so at the top).
+  Nothing else in the WAR is changed. The bundled third-party libraries,
+  including those under the EPL 2.0 and CDDL 1.1, are shipped unmodified;
+  betterguac-setup converts the WAR and extensions from javax.* to jakarta.*
+  for Tomcat 10 on the machine where it is installed, with Debian's Apache
+  Tomcat migration tool (tomcat-jakartaee-migration).
 - BetterGuac interface add-on and profile extension (new code).
-- YAML-to-database sync tool (new code).
+- YAML-to-database sync tool, Activity log and schema migrations (new code).
+
+Source code: see /usr/share/doc/betterguac/SOURCES (in the source tree:
+files/SOURCES).
 
 Apache Guacamole, Guacamole and the Guacamole logo are trademarks of The
 Apache Software Foundation. BetterGuac is not endorsed by or affiliated

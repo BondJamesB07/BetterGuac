@@ -4,7 +4,7 @@ BetterGuac is a clientless remote access gateway for SSH, RDP, VNC and Telnet, b
 
 Your users open a browser, sign in with their email address and an authenticator code, and see only the servers you assigned to them. No VPN client, no browser plugin, no Java applet.
 
-> This README describes release 1.6.0+bg9.
+> This README describes release 1.6.0+bg10.
 
 ## Contents
 
@@ -30,6 +30,8 @@ Your users open a browser, sign in with their email address and an authenticator
 - **YAML as a source of truth.** Describe servers and users in one file, preview the exact changes, then apply them by plan ID.
 - **SSH keys by path.** Private keys stay as files on the gateway. They are never pasted into a browser or stored as key text in the database.
 - **RDP fix included.** guacd ships with a FreeRDP 3 post-connect graphics fix.
+- **Activity log.** Administrators see who signed in, failed sign-ins, two-factor events, server sessions with their length, admin changes and YAML sync applies on the Activity page, with filters, search and CSV export. Activity is kept for 365 days by default.
+- **Automatic database updates.** Upgrades apply BetterGuac's numbered database changes in order, after a backup of the database.
 
 ## Requirements
 
@@ -50,10 +52,10 @@ Download the package for your architecture, then install it with `apt` so depend
 
 ```bash
 # amd64
-sudo apt install ./betterguac_1.6.0+bg9_amd64.deb
+sudo apt install ./betterguac_1.6.0+bg10_amd64.deb
 
 # arm64
-sudo apt install ./betterguac_1.6.0+bg9_arm64.deb
+sudo apt install ./betterguac_1.6.0+bg10_arm64.deb
 ```
 
 The `./` matters: without it, `apt` looks for a package in your repositories instead of the file.
@@ -67,7 +69,7 @@ These questions appear only when you install from an interactive terminal. When 
 
 ```bash
 echo "betterguac betterguac/admin-email string admin@example.com" | sudo debconf-set-selections
-sudo apt install -y ./betterguac_1.6.0+bg9_amd64.deb
+sudo apt install -y ./betterguac_1.6.0+bg10_amd64.deb
 ```
 
 When installation finishes, check that everything is running:
@@ -88,7 +90,11 @@ If you let the installer generate the password, read it from:
 sudo cat /etc/betterguac/initial-admin.txt
 ```
 
-The file is readable by root only. Delete it once you have signed in and changed the password.
+The file is readable by root only. **Delete it once you have signed in and changed the password:** upgrades leave it in place, and after a password change it holds a stale password.
+
+```bash
+sudo rm /etc/betterguac/initial-admin.txt
+```
 
 ### The setup administrator
 
@@ -372,6 +378,13 @@ location /betterguac/ {
 }
 ```
 
+**Client addresses in the Activity log.** Behind a proxy, Tomcat would see every request as coming from the proxy. BetterGuac's Tomcat context enables Tomcat's `RemoteIpValve`, which takes the client's address from `X-Forwarded-For`, but only when the request comes from a trusted proxy: loopback and private addresses (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 169.254.0.0/16, 100.64.0.0/10, fc00::/7). Traefik, Caddy and the nginx example above send that header. If your proxy reaches BetterGuac from a public address, its requests are logged with the proxy's address; put the addresses to trust, as one regular expression in Tomcat's `internalProxies` format, in `/etc/betterguac/trusted-proxies`, then run `sudo betterguac-admin setup`. This replaces the default list, so include your private ranges too if you need them, for example:
+
+```bash
+echo '10\.\d{1,3}\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3}|203\.0\.113\.7' | sudo tee /etc/betterguac/trusted-proxies
+sudo betterguac-admin setup
+```
+
 ### Migrating from Apache Guacamole: remove old /guacamole rules
 
 BetterGuac redirects old `/guacamole/...` addresses and the bare server address to the same path under `/betterguac/`, so existing bookmarks keep working. If your proxy still carries rules from a stock Guacamole setup that add or rewrite a `/guacamole` prefix (for example Traefik `addPrefix` or `replacePathRegex` middleware, or an nginx `proxy_pass` ending in `/guacamole/`), every request is sent back into that redirect, and each round trip adds another segment:
@@ -390,6 +403,8 @@ BetterGuac redirects old `/guacamole/...` addresses and the bare server address 
 |---|---|
 | Status of all services | `sudo betterguac-admin status` |
 | Reset a password (also resets two-factor) | `sudo betterguac-admin reset-password <username>` |
+| Database changes: list / apply | `sudo betterguac-admin migrate --status` / `sudo betterguac-admin migrate` |
+| Rebuild the Tomcat 10 copy of the web application | `sudo betterguac-admin webapp` |
 | guacd logs | `journalctl -u betterguac-guacd` |
 | Web application logs | `journalctl -u tomcat10` and `/var/log/tomcat10/` |
 
@@ -402,7 +417,9 @@ BetterGuac redirects old `/guacamole/...` addresses and the bare server address 
 | `/etc/betterguac/keys/` | SSH private keys |
 | `/etc/betterguac/betterguac.yaml` | YAML servers and users |
 | `/etc/betterguac/sync.env` | Secrets and the sync's database login (root only) |
-| `/usr/share/betterguac/` | Web application, extensions, schema, examples |
+| `/usr/share/betterguac/` | Web application and extensions as shipped (`javaee/`), schema, examples |
+| `/var/cache/betterguac/` | The web application and extensions converted for Tomcat 10 on this machine |
+| `/var/lib/betterguac/backups/` | Database backups taken before database changes |
 | `/usr/lib/betterguac/guacd/` | guacd and its protocol plugins |
 
 ## Removing BetterGuac
@@ -497,8 +514,12 @@ These steps were tested on Debian 13. The package is built for the architecture 
    dpkg-buildpackage -b -us -uc
    ```
 
-   The package is written to the folder above the repository, for example `../betterguac_1.6.0+bg9_amd64.deb`. Install it as described in [Install](#install).
+   The package is written to the folder above the repository, for example `../betterguac_1.6.0+bg10_amd64.deb`. Install it as described in [Install](#install).
 
 ## License and credits
 
 BetterGuac is based on [Apache Guacamole](https://guacamole.apache.org/), used under the Apache License 2.0. The required license and notice files are included in the package, in `/usr/share/doc/betterguac/`. The MySQL authentication and two-factor extensions contain third-party libraries; their upstream LICENSE, NOTICE and per-library license files are kept in `/usr/share/doc/betterguac/guacamole-auth-jdbc/` and `/usr/share/doc/betterguac/guacamole-auth-totp/`. Apache Guacamole and Guacamole are trademarks of the Apache Software Foundation; BetterGuac is an independent project and is not endorsed by the Apache Software Foundation.
+
+BetterGuac's changes to Apache Guacamole files are listed in `/usr/share/doc/betterguac/NOTICE`, and each changed file says so. The Apache Guacamole web application and its bundled third-party libraries (some under the Eclipse Public License 2.0 and CDDL 1.1) are shipped unmodified; they are converted from `javax.*` to `jakarta.*` for Tomcat 10 on the machine where BetterGuac is installed, with Debian's Apache Tomcat migration tool. Where to get the source of BetterGuac, Apache Guacamole and those libraries is in `/usr/share/doc/betterguac/SOURCES`.
+
+The Docker image is built on Debian and contains Debian packages under their own licenses, some under the GNU GPL (for example MariaDB and libvncclient). The image lists every package and version in `/usr/share/doc/betterguac/sbom/` (`packages.tsv` and an SPDX 2.3 file); their source is in the Debian archive at https://deb.debian.org/debian/pool/main/ and https://snapshot.debian.org/.

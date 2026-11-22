@@ -4,12 +4,12 @@
 set -eu
 B=$1; P=$2; S=$(pwd); W=$B/web
 SH=$P/usr/share/betterguac
-mkdir -p "$SH/webapp" "$SH/extensions" "$SH/schema" "$SH/templates"
-(cd "$SH/webapp" && unzip -q "$W/out/guacamole.war")
-rm -rf "$SH/webapp/META-INF/maven"
-find "$SH/webapp" -type d -exec chmod 755 {} +
-find "$SH/webapp" -type f -exec chmod 644 {} +
-for j in "$W"/out/*.jar; do install -m 644 "$j" "$SH/extensions/"; done
+# The web application and extensions are shipped as built (javax.*), with
+# their third-party libraries unmodified. betterguac-setup converts them for
+# Tomcat 10 into /var/cache/betterguac on the installed machine.
+mkdir -p "$SH/javaee/extensions" "$SH/schema" "$SH/templates"
+install -m 644 "$W/out/guacamole-javax.war" "$SH/javaee/guacamole.war"
+for j in "$W"/out/*.jar; do install -m 644 "$j" "$SH/javaee/extensions/"; done
 install -m 644 "$W"/schema/*.sql "$SH/schema/"
 # BetterGuac's own numbered schema changes (betterguac-admin migrate)
 mkdir -p "$SH/schema/betterguac"
@@ -36,8 +36,8 @@ done
 # and the JDBC driver are links to the packaged files.
 mkdir -p "$P/etc/betterguac/extensions" "$P/etc/betterguac/lib"
 install -m 644 files/guacd.conf "$P/etc/betterguac/guacd.conf"
-for j in "$SH"/extensions/*.jar; do
-    ln -s "/usr/share/betterguac/extensions/$(basename "$j")" "$P/etc/betterguac/extensions/$(basename "$j")"
+for j in "$SH"/javaee/extensions/*.jar; do
+    ln -s "/var/cache/betterguac/extensions/$(basename "$j")" "$P/etc/betterguac/extensions/$(basename "$j")"
 done
 ln -s /usr/share/java/mariadb-java-client.jar "$P/etc/betterguac/lib/mariadb-java-client.jar"
 
@@ -51,6 +51,7 @@ install -m 644 README.md "$P/usr/share/doc/betterguac/README.md"
 install -m 644 files/NOTICE "$P/usr/share/doc/betterguac/NOTICE"
 install -m 644 "$B/guacamole-server-1.6.0/LICENSE" "$P/usr/share/doc/betterguac/LICENSE"
 install -m 644 files/README.Debian "$P/usr/share/doc/betterguac/README.Debian"
+install -m 644 files/SOURCES "$P/usr/share/doc/betterguac/SOURCES"
 
 # credits of the two upstream extensions: each release archive has its own
 # LICENSE, NOTICE and bundled/ (third-party licenses of the libraries inside

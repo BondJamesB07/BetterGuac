@@ -15,4 +15,7 @@ export GUACAMOLE_HOME=/etc/betterguac
 # keep all Tomcat logging on the container's stdout/stderr
 export CATALINA_OUT=/dev/stdout
 export CATALINA_OUT_CMD=
+# convert the shipped web application for Tomcat 10 (javax to jakarta) on
+# first start; later starts reuse it unless the package changed
+/usr/lib/betterguac/betterguac-setup webapp
 exec runuser -u tomcat -- "$CATALINA_HOME/bin/catalina.sh" run

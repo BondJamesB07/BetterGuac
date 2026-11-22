@@ -7,6 +7,8 @@ set -e
 case "$1" in
     remove)
         rm -f /etc/tomcat10/Catalina/localhost/betterguac.xml /etc/tomcat10/Catalina/localhost/guacamole.xml
+        # the Tomcat 10 copy of the web application, built on this machine
+        rm -rf /var/cache/betterguac
         if grep -qs 'managed by the betterguac package' /etc/tomcat10/Catalina/localhost/ROOT.xml; then
             rm -f /etc/tomcat10/Catalina/localhost/ROOT.xml
         fi
@@ -34,6 +36,7 @@ EOF
         else
             echo "betterguac: MariaDB isn't running, so the betterguac databases were left in place" >&2
         fi
+        rm -rf /var/cache/betterguac
         rm -rf /etc/betterguac /var/lib/betterguac /var/lib/private/betterguac-guacd /var/lib/betterguac-guacd
         if [ -d /run/systemd/system ]; then
             deb-systemd-invoke try-restart tomcat10.service >/dev/null 2>&1 || true

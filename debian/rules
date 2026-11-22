@@ -24,6 +24,12 @@ override_dh_auto_configure:
 	tar -xzf upstream/guacamole-server-1.6.0.tar.gz -C $(B)
 	cd $(SRV) && patch -p1 < $(CURDIR)/patches/0001-rdp-gdi-init-in-postconnect.patch
 	cd $(SRV) && patch -p1 < $(CURDIR)/patches/0002-guacd-config-file-option.patch
+	# prominent change notice in each file the patches modify (Apache License 2.0, section 4b)
+	cd $(SRV) && for f in $$(sed -n 's#^+++ b/##p' $(CURDIR)/patches/0001-*.patch $(CURDIR)/patches/0002-*.patch | sort -u); do \
+		printf '/* Modified by BetterGuac, 2026 (patches/%s in the BetterGuac source).\n * Original: Apache Guacamole 1.6.0, The Apache Software Foundation. */\n' \
+			"$$(grep -l "^+++ b/$$f" $(CURDIR)/patches/000[12]-*.patch | xargs -n1 basename | tr '\n' ' ' | sed 's/ $$//')" | cat - $$f > $$f.bgtmp && mv $$f.bgtmp $$f; \
+		grep -q 'Modified by BetterGuac' $$f; \
+	done
 	cd $(SRV) && ./configure \
 		--build=$(DEB_BUILD_GNU_TYPE) --host=$(DEB_HOST_GNU_TYPE) \
 		--prefix=$(GUACD_PREFIX) \

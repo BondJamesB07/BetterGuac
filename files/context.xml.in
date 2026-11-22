@@ -1,4 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- BetterGuac web application, managed by the betterguac package.
-     It is removed when the package is removed. -->
-<Context docBase="/usr/share/betterguac/webapp" />
+     It is removed when the package is removed.
+     docBase: the web application as converted for Tomcat 10 on this machine
+     by betterguac-setup (rebuilt with: sudo betterguac-admin webapp). -->
+<Context docBase="/var/cache/betterguac/webapp">
+    <!-- Behind a reverse proxy, take the client's address from
+         X-Forwarded-For, but only when the request comes from a trusted
+         proxy. Tomcat's default list trusts loopback and private addresses
+         (10/8, 172.16/12, 192.168/16, 169.254/16, 100.64/10, fc00::/7).
+         Direct requests from other addresses are logged as they are. -->
+    <Valve className="org.apache.catalina.valves.RemoteIpValve"
+           remoteIpHeader="X-Forwarded-For"
+           protocolHeader="X-Forwarded-Proto" />
+</Context>

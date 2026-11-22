@@ -1,3 +1,11 @@
+BetterGuac: set up FreeRDP 3 graphics (GDI) in the post-connect callback.
+
+Modified by BetterGuac, 2026. Changes src/protocols/rdp/rdp.c of Apache
+Guacamole 1.6.0 (The Apache Software Foundation, Apache License 2.0): the
+GDI is initialised after connecting instead of before, which fixes RDP
+crashes with FreeRDP 3. The build adds a change notice at the top of the
+patched file.
+
 --- a/src/protocols/rdp/rdp.c
 +++ b/src/protocols/rdp/rdp.c
 @@ -166,7 +166,6 @@
