@@ -1,0 +1,12 @@
+# Throwaway test image: the published bg9 image plus the feature/audit-log
+# branch's changed files. Never pushed anywhere.
+FROM bondjamesb07/betterguac:1.6.0-bg9
+COPY out/betterguac-ui-1.6.0.jar /usr/share/betterguac/extensions/betterguac-ui-1.6.0.jar
+COPY wt/files/betterguac-setup /usr/lib/betterguac/betterguac-setup
+COPY wt/files/betterguac-admin /usr/sbin/betterguac-admin
+COPY wt/yaml-sync/betterguac_sync.py /usr/lib/betterguac/sync/betterguac_sync.py
+COPY wt/schema/betterguac/ /usr/share/betterguac/schema/betterguac/
+COPY wt/docker/docker/entrypoint.sh /usr/local/bin/betterguac-entrypoint
+RUN chmod 755 /usr/lib/betterguac/betterguac-setup /usr/sbin/betterguac-admin \
+        /usr/lib/betterguac/sync/betterguac_sync.py /usr/local/bin/betterguac-entrypoint \
+    && chmod 644 /usr/share/betterguac/schema/betterguac/*.sql /usr/share/betterguac/extensions/betterguac-ui-1.6.0.jar
