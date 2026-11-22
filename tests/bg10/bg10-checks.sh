@@ -8,7 +8,7 @@ bg10_checks(){
   local U P TK V A R N
   U=$(admin_user); P=$(admin_pw)
   V=$(dpkg-query -W -f='${Version}' betterguac)
-  [ "$V" = "1.6.0+bg10" ] && pass "installed version $V" || fail "installed version '$V'"
+  [ "$V" = "1.6.0+bg11" ] && pass "installed version $V" || fail "installed version '$V'"
   # migrations
   N=$(sql -e "SELECT COUNT(*) FROM bg_schema_migration" 2>/dev/null)
   [ "${N:-0}" -ge 1 ] && pass "schema migrations recorded ($N)" || fail "no bg_schema_migration rows"
@@ -57,4 +57,35 @@ PY
   case $C in 401|403) pass "Activity API refuses without a token ($C)";; *) fail "Activity API no-token $C";; esac
   # page assets
   curl -s "$BASE/app.js" >/dev/null
+  bg11_checks
+}
+# bg11: refreshed third-party parts (the CVE fixes)
+bg11_checks(){
+  local W=/var/cache/betterguac/webapp/WEB-INF/lib j L
+  for j in jackson-databind-2.21.8.jar jackson-core-2.21.8.jar guava-33.8.0-jre.jar failureaccess-1.0.3.jar logback-classic-1.5.38.jar logback-core-1.5.38.jar; do
+    [ -f "$W/$j" ] && pass "web app bundles $j" || fail "web app lacks $j"
+  done
+  L=$(ls "$W" | grep -E '^(jackson-databind-2\.19|guava-32|logback-(classic|core)-1\.[0-4]\.|logback-(classic|core)-1\.5\.([0-9]|[12][0-9]|3[0-7])\.jar)' | tr '\n' ' ')
+  [ -z "$L" ] && pass "no old Jackson, Guava or Logback jars left in the web app" || fail "old jars in web app: $L"
+  python3 - <<'PY' && pass "JDBC extension carries MyBatis 3.6.0 (OGNL 3.4.16)" || fail "MyBatis/OGNL in the JDBC extension"
+import zipfile, glob, io, sys
+fs = [f for f in glob.glob("/etc/betterguac/extensions/*.jar") if "mysql" in f]
+assert fs, "no mysql extension"
+z = zipfile.ZipFile(fs[0])
+n = [x for x in z.namelist() if "org/apache/ibatis/ognl" in x]
+m = z.read("META-INF/maven/org.mybatis/mybatis/pom.properties").decode() if "META-INF/maven/org.mybatis/mybatis/pom.properties" in z.namelist() else ""
+assert "version=3.6.0" in m, m
+sys.exit(0)
+PY
+  L=$(readlink -f /etc/betterguac/lib/mariadb-java-client.jar)
+  case "$L" in */mariadb-java-client-2.7.15.jar) pass "JDBC driver link resolves to Connector/J 2.7.15 ($L)";; *) fail "JDBC driver link -> '$L'";; esac
+  if command -v dpkg-query >/dev/null 2>&1; then
+    T=$(java -cp /usr/share/betterguac/tomcat/lib/catalina.jar org.apache.catalina.util.ServerInfo 2>/dev/null | sed -n 's/^Server number: *//p')
+    [ "$T" = 10.1.62.0 ] && pass "bundled Tomcat is 10.1.62 ($T)" || fail "bundled Tomcat '$T'"
+    ps -eo args | grep -v grep | grep -q -- '-Dcatalina.home=/usr/share/betterguac/tomcat' && pass "running Tomcat uses the bundled Tomcat" || fail "running Tomcat is not the bundled one"
+    ls /usr/share/betterguac/tomcat/lib | grep -qE 'catalina-(ha|tribes)' && fail "clustering jars present" || pass "no catalina-ha/catalina-tribes clustering jars"
+    D=$(dpkg-query -W -f='${Depends}' betterguac)
+    echo "$D" | grep -qE 'tomcat-jakartaee-migration|libmariadb-java' && fail "old dependencies in Depends: $D" || pass "Depends has no tomcat-jakartaee-migration or libmariadb-java"
+    ls /usr/share/java 2>/dev/null | grep -q '^commons-lang3-3\.17' && echo "note: commons-lang3 3.17 still on disk from another package" || pass "no commons-lang3 3.17 under /usr/share/java"
+  fi
 }

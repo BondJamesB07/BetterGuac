@@ -11,7 +11,7 @@ D=$(mktemp -d /tmp/bgarch-test.XXXXXX)
 cp "$SRC"/Dockerfile "$SRC"/inner.sh "$SRC"/expect.env "$D"/
 for f in common.sh bg10-checks.sh test-incontainer.sh probe.py Dockerfile.target target-entry.sh; do cp "$SRC/../bg10/$f" "$D/"; done
 sed -i "s#/root/probe.py#./probe.py#g" "$D/common.sh"
-sed -i "s#V=\$(dpkg-query -W -f='\${Version}' betterguac)#V=\$(pacman -Q betterguac | cut -d' ' -f2)#; s#\[ \"\$V\" = \"1.6.0+bg10\" \]#[ \"\$V\" = \"${BG_EXPECT_VER:-1.6.0+bg10-3}\" ]#" "$D/bg10-checks.sh"
+sed -i "s#V=\$(dpkg-query -W -f='\${Version}' betterguac)#V=\$(pacman -Q betterguac | cut -d' ' -f2)#; s#\[ \"\$V\" = \"1.6.0+bg11\" \]#[ \"\$V\" = \"${BG_EXPECT_VER:-1.6.0+bg11-1}\" ]#" "$D/bg10-checks.sh"
 IMG=bgarch-test-$TAG; C=bgarch-t-$TAG; S=bgarch-ssh-$TAG; T=bgarch-rdp-$TAG; NET=bgarch-net-$TAG
 TPW=$(head -c 18 /dev/urandom | base64 | tr -dc A-Za-z0-9 | head -c 16)
 docker rm -f $C $S $T >/dev/null 2>&1; docker network rm $NET >/dev/null 2>&1

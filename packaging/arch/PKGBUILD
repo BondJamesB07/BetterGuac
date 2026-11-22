@@ -42,7 +42,7 @@ depends=(
   'libwebsockets'
   'ffmpeg'
 )
-makedepends=('jdk21-openjdk' 'zip' 'unzip' 'patch')
+makedepends=('jdk21-openjdk' 'zip' 'unzip' 'patch' 'python')
 conflicts=('guacamole-server')
 backup=('etc/betterguac/guacd.conf')
 install=betterguac.install

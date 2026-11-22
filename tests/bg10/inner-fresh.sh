@@ -4,7 +4,7 @@ set -u
 . /root/common.sh; . /root/bg10-checks.sh
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -qq >/dev/null
-apt-get install -y -qq /root/new.deb > /root/inst.log 2>&1 && pass "apt install of the bg10 .deb" || { fail "install"; tail -n 15 /root/inst.log; }
+apt-get install -y -qq /root/new.deb > /root/inst.log 2>&1 && pass "apt install of the bg11 .deb" || { fail "install"; tail -n 15 /root/inst.log; }
 G=$(sha256sum /root/new.deb | cut -d' ' -f1); [ "$G" = "$EXPECT_SHA" ] && pass "package checksum matches the build ($G)" || fail "checksum $G"
 wait_web || fail "web app did not answer"
 bash /root/test-incontainer.sh > /root/std.log 2>&1; grep -E '^(PASS|FAIL|=== RESULT)' /root/std.log
