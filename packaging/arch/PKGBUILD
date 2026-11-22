@@ -126,6 +126,12 @@ package() {
   # web application, extensions, setup helper, YAML sync, config and legal files:
   # the same script the .deb uses
   sh debian/install-web.sh "$B" "$P"
+  # Arch runs its own tomcat10 (the bundled Tomcat is Debian/Ubuntu and Docker
+  # only): drop the CATALINA_HOME line and its comment from the tomcat10 drop-in
+  sed -i -e '/^# BetterGuac ships Apache Tomcat/,/^Environment=CATALINA_HOME=/d' \
+    "$P/usr/lib/systemd/system/tomcat10.service.d/betterguac.conf"
+  if grep -q 'CATALINA_HOME' "$P/usr/lib/systemd/system/tomcat10.service.d/betterguac.conf"; then return 1; fi
+  grep -q '^Environment=GUACAMOLE_HOME=/etc/betterguac$' "$P/usr/lib/systemd/system/tomcat10.service.d/betterguac.conf"
   # Arch: /usr/sbin is a symlink to /usr/bin
   install -d "$P/usr/bin"
   mv "$P"/usr/sbin/* "$P/usr/bin/"

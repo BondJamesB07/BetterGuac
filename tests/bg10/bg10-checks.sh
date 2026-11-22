@@ -72,9 +72,10 @@ import zipfile, glob, io, sys
 fs = [f for f in glob.glob("/etc/betterguac/extensions/*.jar") if "mysql" in f]
 assert fs, "no mysql extension"
 z = zipfile.ZipFile(fs[0])
-n = [x for x in z.namelist() if "org/apache/ibatis/ognl" in x]
-m = z.read("META-INF/maven/org.mybatis/mybatis/pom.properties").decode() if "META-INF/maven/org.mybatis/mybatis/pom.properties" in z.namelist() else ""
-assert "version=3.6.0" in m, m
+mb = [x for x in z.namelist() if x.split("/")[-1].startswith("mybatis-3")]
+assert mb == ["mybatis-3.6.0.jar"], mb
+inner = zipfile.ZipFile(io.BytesIO(z.read(mb[0])))
+assert any(x.startswith("org/apache/ibatis/ognl/") for x in inner.namelist()), "no shaded OGNL"
 sys.exit(0)
 PY
   L=$(readlink -f /etc/betterguac/lib/mariadb-java-client.jar)
