@@ -33,6 +33,12 @@ public class ExtensionResource {
         return new SessionsResource(userContext);
     }
 
+    /** Admin-only activity log: audit/events, audit/export, audit/settings, audit/purge. */
+    @Path("audit")
+    public AuditResource audit() {
+        return new AuditResource(userContext);
+    }
+
     /** POST mfa/reset (own account) and mfa/reset-user (admins). */
     @Path("mfa")
     public MfaResource mfa() {

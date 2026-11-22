@@ -2847,6 +2847,8 @@ angular.module('index').directive('bgNav', ['$injector', function bgNav($injecto
                     list.push({ key : 'users', label : 'Users', href : '#/settings/users',
                                 active : function () { return /\/settings\/users$/.test(path())
                                     || /^\/manage\/[^\/]+\/users/.test(path()); } });
+                    list.push({ key : 'activity', label : 'Activity', href : '#/activity',
+                                active : function () { return /^\/activity$/.test(path()); } });
                 }
                 list.push(PROFILE);
                 cache = { key : key, list : list };

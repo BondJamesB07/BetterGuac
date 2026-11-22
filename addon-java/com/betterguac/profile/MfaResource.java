@@ -84,6 +84,10 @@ public class MfaResource {
         Result(boolean reset, String message) { this.reset = reset; this.message = message; }
     }
 
+    private String remote() {
+        return userContext instanceof ProfileUserContext ? ((ProfileUserContext) userContext).remoteAddress() : null;
+    }
+
     /* ---------------- endpoints ---------------- */
 
     @POST
@@ -123,6 +127,10 @@ public class MfaResource {
                 nf[0]++;
                 nf[1] = now;
                 FAILURES.put(key, nf);
+                AuditLog.event("mfa", "mfa.reset_self").outcome("failure").actor(username)
+                        .remote(remote()).target("user", username, username)
+                        .detail(passwordOk ? "Own two-factor reset refused: wrong code" : "Own two-factor reset refused: wrong password")
+                        .record();
                 if (secret == null || !confirmed)
                     throw new GuacamoleClientException("Two-factor sign-in isn't set up on this account yet.");
                 throw new GuacamoleSecurityException("The password or the code is wrong.");
@@ -130,6 +138,10 @@ public class MfaResource {
 
             FAILURES.remove(key);
             removeKey(db, userId);
+            AuditLog.event("mfa", "mfa.reset_self").actor(username).remote(remote())
+                    .target("user", username, username)
+                    .detail("Reset own two-factor sign-in; asked to set it up again at next sign-in")
+                    .record();
             return new Result(true, "Two-factor sign-in was reset.");
         }
         catch (SQLException e) {
@@ -182,6 +194,10 @@ public class MfaResource {
             finally {
                 db.setAutoCommit(autoCommit);
             }
+            AuditLog.event("mfa", "mfa.reset_user").actor(self.getIdentifier()).remote(remote())
+                    .target("user", username, username)
+                    .detail("Admin reset two-factor sign-in and set a one-time password")
+                    .record();
             Result r = new Result(true, "Two-factor sign-in was reset for " + username + ".");
             r.temporaryPassword = temporary;
             return r;

@@ -11,6 +11,9 @@ find "$SH/webapp" -type d -exec chmod 755 {} +
 find "$SH/webapp" -type f -exec chmod 644 {} +
 for j in "$W"/out/*.jar; do install -m 644 "$j" "$SH/extensions/"; done
 install -m 644 "$W"/schema/*.sql "$SH/schema/"
+# BetterGuac's own numbered schema changes (betterguac-admin migrate)
+mkdir -p "$SH/schema/betterguac"
+install -m 644 schema/betterguac/*.sql "$SH/schema/betterguac/"
 install -m 644 files/guacamole.properties.in files/context.xml.in files/redirect-context.xml.in "$SH/templates/"
 mkdir -p "$SH/redirect/WEB-INF"
 install -m 644 files/redirect-web.xml "$SH/redirect/WEB-INF/web.xml"

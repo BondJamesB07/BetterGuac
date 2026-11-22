@@ -49,8 +49,85 @@ public class ProfileUserContext extends DelegatingUserContext {
     public static final Form AVATAR_FORM = new Form("betterguac-avatar",
             Collections.<Field>singletonList(new TextField(AVATAR)));
 
+    /** Where the signed-in person connected from, for the activity log. */
+    private final String remoteAddress;
+
     public ProfileUserContext(UserContext userContext) {
+        this(userContext, null);
+    }
+
+    public ProfileUserContext(UserContext userContext, String remoteAddress) {
         super(userContext);
+        this.remoteAddress = remoteAddress;
+    }
+
+    String remoteAddress() {
+        return remoteAddress;
+    }
+
+    /** The person making changes through this context, for the activity log. */
+    AuditedObjects.Who who() {
+        String actor = null;
+        try {
+            User self = self();
+            actor = self == null ? null : self.getIdentifier();
+        }
+        catch (RuntimeException e) {
+            // leave the actor unknown rather than fail the request
+        }
+        return new AuditedObjects.Who(actor, remoteAddress);
+    }
+
+    private static boolean audited(UserContext context) {
+        return context.getAuthenticationProvider() != null
+                && "mysql".equals(context.getAuthenticationProvider().getIdentifier());
+    }
+
+    private Collection<User> wrapUsers(Collection<User> users) {
+        if (users == null || !audited(this))
+            return users;
+        AuditedObjects.Who who = who();
+        List<User> out = new ArrayList<>(users.size());
+        for (User u : users)
+            out.add(u == null ? null : new AuditedObjects.AuditedUser(u, who));
+        return out;
+    }
+
+    /**
+     * Server groups: membership and permission changes are logged (AuditedObjects).
+     * Adds, renames and deletes come through Guacamole's own events (AuditListener).
+     */
+    @Override
+    public Directory<org.apache.guacamole.net.auth.UserGroup> getUserGroupDirectory()
+            throws GuacamoleException {
+        Directory<org.apache.guacamole.net.auth.UserGroup> directory = super.getUserGroupDirectory();
+        if (!audited(this))
+            return directory;
+        final AuditedObjects.Who who = who();
+        return new DelegatingDirectory<org.apache.guacamole.net.auth.UserGroup>(directory) {
+            @Override
+            public org.apache.guacamole.net.auth.UserGroup get(String identifier) throws GuacamoleException {
+                org.apache.guacamole.net.auth.UserGroup g = super.get(identifier);
+                return g == null ? null : new AuditedObjects.AuditedGroup(g, who);
+            }
+            @Override
+            public Collection<org.apache.guacamole.net.auth.UserGroup> getAll(Collection<String> identifiers)
+                    throws GuacamoleException {
+                Collection<org.apache.guacamole.net.auth.UserGroup> all = super.getAll(identifiers);
+                List<org.apache.guacamole.net.auth.UserGroup> out = new ArrayList<>(all.size());
+                for (org.apache.guacamole.net.auth.UserGroup g : all)
+                    out.add(g == null ? null : new AuditedObjects.AuditedGroup(g, who));
+                return out;
+            }
+            @Override
+            public void add(org.apache.guacamole.net.auth.UserGroup group) throws GuacamoleException {
+                super.add(AuditedObjects.unwrap(group));
+            }
+            @Override
+            public void update(org.apache.guacamole.net.auth.UserGroup group) throws GuacamoleException {
+                super.update(AuditedObjects.unwrap(group));
+            }
+        };
     }
 
     private static Collection<Form> withProfile(Collection<Form> forms) {
@@ -135,7 +212,21 @@ public class ProfileUserContext extends DelegatingUserContext {
         return new DelegatingDirectory<User>(super.getUserDirectory()) {
 
             @Override
+            public User get(String identifier) throws GuacamoleException {
+                User u = super.get(identifier);
+                if (u == null || !audited(ProfileUserContext.this))
+                    return u;
+                return new AuditedObjects.AuditedUser(u, who());
+            }
+
+            @Override
+            public Collection<User> getAll(Collection<String> identifiers) throws GuacamoleException {
+                return wrapUsers(super.getAll(identifiers));
+            }
+
+            @Override
             public void add(User user) throws GuacamoleException {
+                user = AuditedObjects.unwrap(user);
 
                 // New accounts sign in with an email address
                 String identifier = user.getIdentifier();
@@ -159,6 +250,7 @@ public class ProfileUserContext extends DelegatingUserContext {
 
             @Override
             public void update(User user) throws GuacamoleException {
+                user = AuditedObjects.unwrap(user);
                 validateProfile(user.getAttributes());
                 guardTotpKey(user);
                 super.update(user);

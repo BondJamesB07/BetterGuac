@@ -223,12 +223,90 @@ url() {
     echo "http://${ip:-localhost}:${port:-8080}/betterguac/"
 }
 
+# ------------------------------------------------------------ schema migrations
+# BetterGuac's own tables and columns live in numbered files under
+# $SHARE/schema/betterguac (001-audit-log.sql, 002-..., never renumbered or
+# edited once released). Each is idempotent. bg_schema_migration records
+# which ones a database has had; anything newer is applied in order, after a
+# compressed dump of the database. Runs from the .deb on every configure and
+# from the Docker image on every start, and by hand: betterguac-admin migrate.
+MIGRATIONS=$SHARE/schema/betterguac
+BACKUPS=$STATE/backups
+
+pkg_version() {
+    dpkg-query -W -f='${Version}' betterguac 2>/dev/null || echo "${BETTERGUAC_VERSION:-unknown}"
+}
+
+migrate_schema() { # migrate_schema [--no-backup]
+    local nobackup=${1:-} f base ver name sum have dump="" extra
+    local pending=()
+    [ -d "$MIGRATIONS" ] || return 0
+    install -d -m 0700 "$BACKUPS"
+    exec 9>"$STATE/migrate.lock"
+    flock -w 120 9 || die "another schema migration is running (lock $STATE/migrate.lock)"
+    sql "$DB_NAME" -e "CREATE TABLE IF NOT EXISTS bg_schema_migration (
+        version INT NOT NULL, name VARCHAR(128) NOT NULL, checksum CHAR(64) NOT NULL,
+        package_version VARCHAR(64) NULL, applied_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (version)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
+    for f in "$MIGRATIONS"/[0-9][0-9][0-9]-*.sql; do
+        [ -e "$f" ] || continue
+        base=$(basename "$f" .sql); ver=$((10#${base%%-*})); sum=$(sha256sum "$f" | cut -d' ' -f1)
+        have=$(sql "$DB_NAME" -e "SELECT checksum FROM bg_schema_migration WHERE version=$ver")
+        if [ -z "$have" ]; then
+            pending+=("$f")
+        elif [ "$have" != "$sum" ]; then
+            say "warning: schema change $base was edited after it was applied (checksum differs); not applied again"
+        fi
+    done
+    if [ ${#pending[@]} = 0 ]; then
+        say "database schema is up to date"
+        return 0
+    fi
+    if [ "$nobackup" != --no-backup ]; then
+        dump="$BACKUPS/pre-migrate-$(date -u +%Y%m%dT%H%M%SZ).sql.gz"
+        extra=$(sql -e "SHOW DATABASES LIKE '$SYNC_DB'")
+        say "backing up the database to $dump before ${#pending[@]} schema change(s)"
+        # shellcheck disable=SC2086
+        if ! ( umask 077; set -o pipefail; mariadb-dump --protocol=socket -uroot --single-transaction \
+                --databases "$DB_NAME" $extra | gzip -6 > "$dump" ); then
+            rm -f "$dump"
+            die "the backup failed, so the schema was not changed"
+        fi
+        # keep the newest five
+        ls -1t "$BACKUPS"/pre-migrate-*.sql.gz 2>/dev/null | tail -n +6 | xargs -r rm -f
+    fi
+    for f in "${pending[@]}"; do
+        base=$(basename "$f" .sql); ver=$((10#${base%%-*})); name=${base#*-}; sum=$(sha256sum "$f" | cut -d' ' -f1)
+        say "applying schema change $base"
+        sql "$DB_NAME" < "$f" || die "schema change $base failed. The database from before it is in ${dump:-(no backup: fresh install)}"
+        sql "$DB_NAME" -e "INSERT INTO bg_schema_migration (version, name, checksum, package_version) VALUES ($ver, '$name', '$sum', '$(pkg_version)')"
+    done
+    say "database schema is up to date"
+}
+
+cmd_migrate() {
+    [ "$(id -u)" = 0 ] || die "run this as root"
+    wait_for_db || die "MariaDB isn't answering"
+    case "${1:-}" in
+        --status)
+            echo "applied:"
+            sql "$DB_NAME" -e "SELECT version, name, package_version, applied_at FROM bg_schema_migration ORDER BY version" 2>/dev/null | sed 's/^/  /'
+            echo "shipped:"
+            ls -1 "$MIGRATIONS" 2>/dev/null | sed 's/^/  /' ;;
+        ""|--no-backup) migrate_schema "${1:-}" ;;
+        *) die "usage: betterguac-admin migrate [--status|--no-backup]" ;;
+    esac
+}
+
 cmd_configure() {
     [ "$(id -u)" = 0 ] || die "run this as root"
     getent group "$TOMCAT_GROUP" >/dev/null || die "the $TOMCAT_GROUP group is missing (is tomcat10 installed?)"
     setup_dirs
     wait_for_db || die "MariaDB isn't answering. Start it (systemctl start mariadb), then run: sudo dpkg --configure -a"
+    local fresh=no
+    [ "$(sql -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='$DB_NAME' AND table_name='guacamole_user'" 2>/dev/null || echo 0)" = 0 ] && fresh=yes
     setup_database
+    if [ "$fresh" = yes ]; then migrate_schema --no-backup; else migrate_schema; fi
     create_admin
     setup_yaml_sync
     setup_tomcat
@@ -277,5 +355,6 @@ case "${1:-}" in
     configure|setup) cmd_configure ;;
     status) cmd_status ;;
     reset-password) shift; cmd_reset_password "$@" ;;
-    *) echo "usage: betterguac-admin {status|reset-password <username>|setup}" >&2; exit 2 ;;
+    migrate) shift; cmd_migrate "$@" ;;
+    *) echo "usage: betterguac-admin {status|reset-password <username>|migrate [--status]|setup}" >&2; exit 2 ;;
 esac

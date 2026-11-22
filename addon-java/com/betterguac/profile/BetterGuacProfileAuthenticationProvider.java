@@ -29,12 +29,12 @@ public class BetterGuacProfileAuthenticationProvider extends AbstractAuthenticat
         return "betterguac-profile";
     }
 
-    private UserContext wrap(UserContext context) {
+    private UserContext wrap(UserContext context, AuthenticatedUser authenticatedUser) {
         if (context == null || context.getAuthenticationProvider() == null)
             return context;
         if (!DATABASE_PROVIDERS.contains(context.getAuthenticationProvider().getIdentifier()))
             return context;
-        return new ProfileUserContext(context);
+        return new ProfileUserContext(context, AuditListener.remoteOf(authenticatedUser));
     }
 
     /**
@@ -54,14 +54,14 @@ public class BetterGuacProfileAuthenticationProvider extends AbstractAuthenticat
     public UserContext decorate(UserContext context,
             AuthenticatedUser authenticatedUser, Credentials credentials)
             throws GuacamoleException {
-        return wrap(context);
+        return wrap(context, authenticatedUser);
     }
 
     @Override
     public UserContext redecorate(UserContext decorated, UserContext context,
             AuthenticatedUser authenticatedUser, Credentials credentials)
             throws GuacamoleException {
-        return wrap(context);
+        return wrap(context, authenticatedUser);
     }
 
 }

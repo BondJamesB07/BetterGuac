@@ -1187,6 +1187,38 @@ def apply_plan(cur, sdb, plan, cfg, state, snap):
     cur.execute('UPDATE `%s`.sync_meta SET last_apply_at = %%s, last_plan_id = %%s WHERE id = 1' % sdb, (now, plan.plan_id))
     cur.execute('INSERT INTO `%s`.apply_log (applied_at, plan_id, summary_json) VALUES (%%s, %%s, %%s)' % sdb,
                 (now, plan.plan_id, json.dumps(plan.counts(), sort_keys=True)))
+    audit_apply(cur, plan, now)
+
+
+def audit_apply(cur, plan, now):
+    """Activity-log rows for this apply, in the same transaction (BetterGuac schema migration 001).
+
+    One summary row, then one row per change. A database that hasn't had the
+    migration yet has no bg_audit_event table: the apply still goes through."""
+    who = os.environ.get('SUDO_USER') or os.environ.get('USER') or 'root'
+    counts = plan.counts()
+    summary = ', '.join('%s %s' % (v, k) for k, v in sorted(counts.items()) if v) or 'no changes'
+    rows = [('sync.applied', 'plan', plan.plan_id, 'Applied YAML plan %s: %s' % (plan.plan_id, summary))]
+    for a in plan.actions[:1000]:
+        op, kind, key = a.get('op'), a.get('kind'), a.get('key')
+        if op in (None, 'unchanged', 'noop'):
+            continue
+        reason = a.get('reason')
+        # in the YAML, a group is a server folder
+        target = {'connection': 'server', 'group': 'folder', 'user': 'user'}.get(kind, kind)
+        detail = '%s %s %s' % (op, target, key) + (' (%s)' % reason if reason else '')
+        rows.append(('sync.' + str(op), target, a.get('name') or key, detail[:1024]))
+    try:
+        for action, ttype, tname, detail in rows:
+            cur.execute('INSERT INTO bg_audit_event (event_time, category, action, outcome, actor, target_type, '
+                        'target_name, detail, source) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)',
+                        (now, 'sync', action[:48], 'success', 'cli:' + who, ttype, (tname or '')[:256] or None,
+                         detail, 'yaml-sync'))
+    except Exception as e:  # noqa: BLE001 - activity log must never block an apply
+        if getattr(e, 'args', [None])[0] == 1146:
+            sys.stderr.write('note: activity log table missing; run: sudo betterguac-admin migrate\n')
+        else:
+            sys.stderr.write('note: activity log row not written: %s\n' % type(e).__name__)
 
 
 # ----------------------------------------------------------------------------- adopt

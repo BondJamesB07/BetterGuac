@@ -5,13 +5,18 @@
     "authProviders": [
         "com.betterguac.profile.BetterGuacProfileAuthenticationProvider"
     ],
+    "listeners": [
+        "com.betterguac.profile.AuditListener"
+    ],
     "css": [
         "betterguac-ui.css",
         "betterguac-ui-pages.css",
-        "betterguac-ui-layout.css"
+        "betterguac-ui-layout.css",
+        "betterguac-activity.css"
     ],
     "js": [
-        "betterguac-ui.js"
+        "betterguac-ui.js",
+        "betterguac-activity.js"
     ],
     "translations": [
         "translations/en.json"
