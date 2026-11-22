@@ -23,6 +23,116 @@ _bg_init_mariadb() {
   fi
 }
 
+_bg_mariadb_init_version() {
+  # Prints the betterguac version whose install script last initialised this
+  # MariaDB, from pacman's log: the "initialising MariaDB" step above runs
+  # only when /var/lib/mysql had no data, and pacman logs what it prints.
+  # Prints nothing when the log shows no such step (MariaDB set up some other
+  # way) or when the data folder is newer than that step (set up again since).
+  local log=/var/log/pacman.log line ts v born t
+  [ -r "$log" ] || return 0
+  line=$(awk '
+    function done_tx() { if (init) { last = (v == "" ? "?" : v) "|" ts } init = 0; v = "" }
+    /\[ALPM\] transaction started/ { done_tx(); ts = substr($1, 2, length($1) - 2) }
+    /\[ALPM\] (installed|reinstalled) betterguac \(/ { s = $0; sub(/.*betterguac \(/, "", s); sub(/\).*/, "", s); v = s }
+    /\[ALPM\] upgraded betterguac \(/ { s = $0; sub(/.*-> /, "", s); sub(/\).*/, "", s); v = s }
+    /\[ALPM-SCRIPTLET\] betterguac: initialising MariaDB in \/var\/lib\/mysql/ { init = 1 }
+    END { done_tx(); print last }' "$log" 2>/dev/null)
+  [ -n "$line" ] || return 0
+  v=${line%%|*}; ts=${line#*|}
+  born=$(stat -c %W /var/lib/mysql/mysql 2>/dev/null || echo 0)
+  t=$(date -d "$ts" +%s 2>/dev/null || echo 0)
+  if [ "${born:-0}" -gt 0 ] && [ "$t" -gt 0 ] && [ "$born" -gt $((t + 3600)) ]; then
+    return 0
+  fi
+  echo "$v"
+}
+
+_bg_close_mariadb() {
+  # bg10-1 initialised MariaDB with Arch's defaults: anonymous accounts, an
+  # open "test" database, listening on every interface. Close it the way the
+  # install above sets up a fresh one, once, and only when pacman's log shows
+  # that bg10-1 itself set this MariaDB up. Every step checks first, so it is
+  # safe on a MariaDB that is already closed, and no BetterGuac data, settings,
+  # accounts, connections or history are touched.
+  local stamp=/var/lib/betterguac/mariadb-closed-by-package
+  local cnf=/etc/my.cnf.d/betterguac-local.cnf v i u n did=''
+  [ -e "$stamp" ] && return 0
+  [ -d /var/lib/mysql/mysql ] || return 0
+  v=$(_bg_mariadb_init_version)
+  [ "$v" = '1.6.0+bg10-1' ] || return 0
+
+  _bgsql() { mariadb --protocol=socket -uroot -N -B "$@"; }
+  if ! _bgsql -e 'SELECT 1' >/dev/null 2>&1; then
+    [ -d /run/systemd/system ] && systemctl start mariadb.service >/dev/null 2>&1
+    for i in $(seq 30); do _bgsql -e 'SELECT 1' >/dev/null 2>&1 && break; sleep 1; done
+  fi
+  if ! _bgsql -e 'SELECT 1' >/dev/null 2>&1; then
+    echo "betterguac: MariaDB isn't answering, so the MariaDB that bg10-1 set up was not closed."
+    echo "            Start it and reinstall this package, or see 'Upgrading from bg10-1' in README.Arch."
+    return 0
+  fi
+
+  # anonymous accounts
+  n=0
+  while IFS= read -r u; do
+    [ -n "$u" ] || continue
+    _bgsql -e "DROP USER $u" && n=$((n + 1))
+  done <<EOF
+$(_bgsql -e "SELECT CONCAT(QUOTE(User),'@',QUOTE(Host)) FROM mysql.global_priv WHERE User=''")
+EOF
+  [ "$n" -gt 0 ] && did="$did removed $n anonymous accounts;"
+  # the grants mariadb-install-db gives everyone on test and test_*
+  n=$(_bgsql -e "SELECT COUNT(*) FROM mysql.db WHERE Db IN ('test','test\\_%')")
+  if [ "${n:-0}" -gt 0 ]; then
+    _bgsql -e "DELETE FROM mysql.db WHERE Db IN ('test','test\\_%'); FLUSH PRIVILEGES" && did="$did removed the open grants on test;"
+  fi
+  # the empty test database (left alone if anything was put in it)
+  if [ -n "$(_bgsql -e "SHOW DATABASES LIKE 'test'")" ]; then
+    n=$(_bgsql -e "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='test'")
+    if [ "${n:-1}" = 0 ]; then
+      _bgsql -e 'DROP DATABASE test' && did="$did dropped the empty test database;"
+    else
+      echo "betterguac: MariaDB's test database has $n tables, so it was kept. Drop it yourself if nothing needs it."
+    fi
+  fi
+
+  # listen on this machine only, unless a setting already says where to listen
+  if [ ! -e "$cnf" ]; then
+    if grep -qsE '^[[:space:]]*(bind[-_]address|skip[-_]networking)' /etc/my.cnf /etc/my.cnf.d/*.cnf; then
+      echo "betterguac: MariaDB already has a bind-address or skip-networking setting, so where it listens was not changed."
+    else
+      printf '%s\n' \
+        '# Written by the betterguac package (1.6.0+bg10-3) on upgrade, for the' \
+        '# MariaDB that betterguac 1.6.0+bg10-1 set up with Arch defaults.' \
+        '# Keeps MariaDB off the network (Arch default: every interface).' \
+        '# Delete this file and restart mariadb if other machines need it.' \
+        '[mysqld]' 'bind-address=127.0.0.1' > "$cnf"
+      chmod 644 "$cnf"
+      if [ -d /run/systemd/system ] && systemctl is-active --quiet mariadb.service; then
+        if systemctl restart mariadb.service; then
+          did="$did MariaDB now listens on 127.0.0.1 only ($cnf);"
+        else
+          rm -f "$cnf"
+          systemctl restart mariadb.service >/dev/null 2>&1
+          echo "betterguac: MariaDB did not restart with bind-address=127.0.0.1, so that setting was taken out again."
+          return 0
+        fi
+      else
+        did="$did wrote $cnf (127.0.0.1 only from MariaDB's next start);"
+      fi
+    fi
+  fi
+
+  install -d -m 755 /var/lib/betterguac
+  printf '%s\n' "Closed by the betterguac package on upgrade, $(date -R)." \
+    'MariaDB was set up by betterguac 1.6.0+bg10-1 with Arch defaults.' \
+    'While this file exists the package does not do it again.' \
+    "Changes:${did:- none needed, already closed}" > "$stamp"
+  echo "betterguac: closed the MariaDB that bg10-1 set up:${did:- it was already closed}"
+  return 0
+}
+
 _bg_system_users() {
   # pacman runs its sysusers and tmpfiles hooks after the install scriptlets,
   # so the mysql and tomcat10 accounts and their folders are created here first
@@ -36,7 +146,11 @@ _bg_system_users() {
 
 _bg_configure() {
   _bg_system_users
-  _bg_init_mariadb
+  if [ -d /var/lib/mysql/mysql ]; then
+    _bg_close_mariadb
+  else
+    _bg_init_mariadb
+  fi
   [ -d /run/systemd/system ] && systemctl daemon-reload >/dev/null 2>&1
   /usr/lib/betterguac/betterguac-setup configure || {
     echo "betterguac: setup did not finish. Fix the error above, then run: sudo betterguac-admin configure"

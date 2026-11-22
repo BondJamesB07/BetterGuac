@@ -1,6 +1,6 @@
 # Arch Linux package
 
-`PKGBUILD` builds `betterguac-1.6.0+bg10-2-<arch>.pkg.tar.zst` for x86_64 and
+`PKGBUILD` builds `betterguac-1.6.0+bg10-3-<arch>.pkg.tar.zst` for x86_64 and
 aarch64 from the `v1.6.0-bg10` tag, the Apache Guacamole 1.6.0 release
 archives, MariaDB Connector/J 2.7.15 and the Apache Tomcat migration tool
 1.0.13 (the last two are not packaged by Arch and ship unmodified, with their
