@@ -47,6 +47,7 @@ closed_ok(){ # label before-data
   is_closed "$1" && pass "$1: MariaDB closed (no anonymous accounts, no test database, 127.0.0.1 only, peer refused on 3306, 8080 answers)" || fail "$1: MariaDB not closed"
   local d; d=$(data); [ "$d" = "$2" ] && pass "$1: BetterGuac data and settings unchanged ($d)" || fail "$1: data changed: $2 -> $d"
   [ "$(signin)" = 1 ] && pass "$1: setup admin signs in" || fail "$1: sign-in"
+  B0=$(data)  # the sign-in adds history and audit rows; later checks compare against this
   x 'systemctl is-active --quiet mariadb tomcat10 betterguac-guacd' && pass "$1: mariadb, tomcat10, guacd active" || fail "$1: services"
   x 'grep -q "^bind-address=127.0.0.1" /etc/my.cnf.d/betterguac-local.cnf && test -s /var/lib/betterguac/mariadb-closed-by-package' && pass "$1: betterguac-local.cnf and the record file written" || fail "$1: cnf/record file"
 }
