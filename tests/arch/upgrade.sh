@@ -26,8 +26,10 @@ inst(){ docker exec $C pacman -U --noconfirm /pkg/$(basename "$1") > "$D/$C.$2.l
 anon(){ sqlc "SELECT COUNT(*) FROM mysql.global_priv WHERE User=''"; }
 testdb(){ sqlc "SHOW DATABASES LIKE 'test'" | grep -c test; }
 listen(){ x "ss -ltnH | awk '{print \$4}' | grep ':3306\$' | tr '\n' ' '"; }
-# BetterGuac data: row counts plus a dump of both databases without dates
-data(){ x "for t in guacamole_user guacamole_connection guacamole_connection_history guacamole_user_permission guacamole_connection_permission; do echo -n \$t=; mariadb --protocol=socket -uroot -N -B betterguac -e \"SELECT COUNT(*) FROM \$t\"; done | tr '\n' ' '; mariadb-dump --protocol=socket -uroot --skip-dump-date --databases betterguac betterguac_yamlsync 2>/dev/null | sha256sum | cut -c1-16; sha256sum /etc/betterguac/guacamole.properties /etc/betterguac/sync.env /etc/betterguac/betterguac.yaml /etc/betterguac/initial-admin.txt | sha256sum | cut -c1-16"; }
+# BetterGuac data: row counts plus a dump of both databases without dates.
+# Sign-in history and the audit log are left out: sign-ins, and the sign-outs
+# a Tomcat restart causes, add rows to them.
+data(){ x "for t in guacamole_user guacamole_connection guacamole_connection_history guacamole_user_permission guacamole_connection_permission; do echo -n \$t=; mariadb --protocol=socket -uroot -N -B betterguac -e \"SELECT COUNT(*) FROM \$t\"; done | tr '\n' ' '; mariadb-dump --protocol=socket -uroot --skip-dump-date --databases betterguac betterguac_yamlsync --ignore-table=betterguac.bg_audit_event --ignore-table=betterguac.guacamole_user_history 2>/dev/null | sha256sum | cut -c1-16; sha256sum /etc/betterguac/guacamole.properties /etc/betterguac/sync.env /etc/betterguac/betterguac.yaml /etc/betterguac/initial-admin.txt | sha256sum | cut -c1-16"; }
 signin(){ x 'U=$(sed -n "s/^username: //p" /etc/betterguac/initial-admin.txt); P=$(sed -n "s/^password: //p" /etc/betterguac/initial-admin.txt); curl -s -X POST http://127.0.0.1:8080/betterguac/api/tokens --data-urlencode "username=$U" --data-urlencode "password=$P" | grep -c authToken'; }
 is_open(){ # label
   local a t l p w; a=$(anon); t=$(testdb); l=$(listen); p=$(port 3306); w=$(port 8080)
