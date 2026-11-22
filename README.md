@@ -82,13 +82,15 @@ Download the package for your architecture, then install it with `pacman -U`, wh
 
 ```bash
 # x86_64
-sudo pacman -U ./betterguac-1.6.0+bg10-1-x86_64.pkg.tar.zst
+sudo pacman -U ./betterguac-1.6.0+bg10-2-x86_64.pkg.tar.zst
 
 # aarch64 (Arch Linux ARM)
-sudo pacman -U ./betterguac-1.6.0+bg10-1-aarch64.pkg.tar.zst
+sudo pacman -U ./betterguac-1.6.0+bg10-2-aarch64.pkg.tar.zst
 ```
 
-The Arch package asks no questions. It initialises MariaDB if the machine has no database yet, creates the first administrator `admin` with a generated password, and enables and starts `mariadb`, `tomcat10` and `betterguac.target`. To choose the first administrator yourself, set `BETTERGUAC_ADMIN_EMAIL` (and optionally `BETTERGUAC_ADMIN_PASSWORD`) for the install: `sudo BETTERGUAC_ADMIN_EMAIL=admin@example.com pacman -U ./betterguac-...`.
+Use bg10-2. The earlier bg10-1 Arch packages are withdrawn: where they set up MariaDB themselves, MariaDB kept Arch's defaults, with anonymous accounts and listening on the LAN. Upgrading does not change a MariaDB that is already set up, so if you installed bg10-1, run the three commands in the [release notes](https://github.com/BondJamesB07/BetterGuac/releases/tag/v1.6.0-bg10) (also in `README.Arch`) before upgrading. The aarch64 package has been tested in an Arch Linux ARM container on arm64 hardware, not yet on a full Arch Linux ARM install.
+
+The Arch package asks no questions. It initialises MariaDB, local only and with no anonymous accounts, if the machine has no database yet, creates the first administrator `admin` with a generated password, and enables and starts `mariadb`, `tomcat10` and `betterguac.target`. To choose the first administrator yourself, set `BETTERGUAC_ADMIN_EMAIL` (and optionally `BETTERGUAC_ADMIN_PASSWORD`) for the install: `sudo BETTERGUAC_ADMIN_EMAIL=admin@example.com pacman -U ./betterguac-...`.
 
 Differences from the Debian package: Telnet is not included, because Arch has no `libtelnet` package (use Docker or the .deb for Telnet); Arch's Tomcat runs as the `tomcat10` user, so SSH key files are group `tomcat10` (see [SSH keys](#ssh-keys)); the notes for Arch are in `/usr/share/doc/betterguac/README.Arch`. The `PKGBUILD` is in `packaging/arch/` and is attached to the release.
 
