@@ -1,7 +1,7 @@
 pkgbase = betterguac
 	pkgdesc = Remote access gateway (SSH, RDP, VNC) based on Apache Guacamole, with MFA, YAML sync and an activity log
 	pkgver = 1.6.0+bg10
-	pkgrel = 1
+	pkgrel = 3
 	url = https://betterguac.org
 	install = betterguac.install
 	arch = x86_64
@@ -58,7 +58,7 @@ pkgbase = betterguac
 	sha256sums = c8cfa082f122323774057c2808eb7e796703bde9459fa04ff6f2c9cc25f74eff
 	sha256sums = 430707b9c65356beac09347cddb600f7289c0bfbc6f98f131c34edce55dcd26f
 	sha256sums = dc1ed4a63255ffc7a245776bce1b2db986b9847eec89d5d4f6a502a977ea81a8
-	sha256sums = b9bb1038fc3c6f591d6c03b37ce7b61852c3ca2d465f58a0f356a81ec10a448c
+	sha256sums = 051374c8737d604eff44b39b8dbc660af33f403ce4e5824b350c5d71b7e299ca
 	sha256sums = 44c11853603626fd7524a6d2bc80e33cb181beedeb2f34ba286e01762a4ede8c
 
 pkgname = betterguac
