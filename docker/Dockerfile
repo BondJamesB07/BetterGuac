@@ -114,6 +114,10 @@ RUN set -eux; \
     # (betterguac-tomcat-run), not baked into the image: the image ships the
     # Apache Guacamole WAR and its third-party libraries unmodified.
     rm -rf /var/cache/betterguac; \
+    # the build-time setup run leaves the migration lock and backup folder in
+    # the state directory; first boot must find it empty
+    rm -rf /var/lib/betterguac/backups /var/lib/betterguac/migrate.lock; \
+    test -z "$(ls -A /var/lib/betterguac)"; \
     rm -rf /var/lib/apt/lists/* /tmp/mariadb-build.log; \
     # make sure nothing from the build run can be mistaken for runtime state
     test ! -e /etc/betterguac/guacamole.properties

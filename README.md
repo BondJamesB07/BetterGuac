@@ -385,6 +385,19 @@ echo '10\.\d{1,3}\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3}|203\.0\.113\.7' |
 sudo betterguac-admin setup
 ```
 
+**Cloudflare (or another CDN) in front of your proxy.** Then the client's address has to be passed on by your proxy, not just by BetterGuac. Traefik, for example, replaces `X-Forwarded-For` with the CDN's address unless it trusts the CDN, so the Activity log shows Cloudflare's address. Tell Traefik to trust Cloudflare's ranges on the entry point (the current list is at https://www.cloudflare.com/ips/):
+
+```yaml
+entryPoints:
+  https:
+    address: ":443"
+    forwardedHeaders:
+      trustedIPs:
+        - "173.245.48.0/20"
+        - "103.21.244.0/22"
+        # ...the rest of https://www.cloudflare.com/ips-v4 and /ips-v6
+```
+
 ### Migrating from Apache Guacamole: remove old /guacamole rules
 
 BetterGuac redirects old `/guacamole/...` addresses and the bare server address to the same path under `/betterguac/`, so existing bookmarks keep working. If your proxy still carries rules from a stock Guacamole setup that add or rewrite a `/guacamole` prefix (for example Traefik `addPrefix` or `replacePathRegex` middleware, or an nginx `proxy_pass` ending in `/guacamole/`), every request is sent back into that redirect, and each round trip adds another segment:
