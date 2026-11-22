@@ -11,13 +11,15 @@
 # See README.md ("Put the .deb in debs/").
 FROM debian:trixie-slim
 
+ARG VCS_REF=unknown
 LABEL org.opencontainers.image.title="BetterGuac" \
       org.opencontainers.image.version="1.6.0-bg10" \
       org.opencontainers.image.description="BetterGuac remote access (based on Apache Guacamole 1.6.0), single container" \
-      org.opencontainers.image.licenses="Apache-2.0 AND (see /usr/share/doc/betterguac/sbom)" \
+      org.opencontainers.image.licenses="Apache-2.0" \
+      io.betterguac.sbom="/usr/share/doc/betterguac/sbom (Debian packages and their licenses; source notice in /usr/share/doc/betterguac/SOURCES)" \
       org.opencontainers.image.source="https://github.com/BondJamesB07/BetterGuac" \
       io.betterguac.package-version="1.6.0+bg10" \
-      org.opencontainers.image.revision="5d0de1c89a3884762e81eb906fe4fff349cbe390"
+      org.opencontainers.image.revision="${VCS_REF}"
 
 ARG DEBIAN_FRONTEND=noninteractive
 
