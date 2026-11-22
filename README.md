@@ -90,7 +90,7 @@ sudo pacman -U ./betterguac-1.6.0+bg10-1-aarch64.pkg.tar.zst
 
 The Arch package asks no questions. It initialises MariaDB if the machine has no database yet, creates the first administrator `admin` with a generated password, and enables and starts `mariadb`, `tomcat10` and `betterguac.target`. To choose the first administrator yourself, set `BETTERGUAC_ADMIN_EMAIL` (and optionally `BETTERGUAC_ADMIN_PASSWORD`) for the install: `sudo BETTERGUAC_ADMIN_EMAIL=admin@example.com pacman -U ./betterguac-...`.
 
-Differences from the Debian package: Arch's Tomcat runs as the `tomcat10` user, so SSH key files are group `tomcat10` (see [SSH keys](#ssh-keys)); the notes for Arch are in `/usr/share/doc/betterguac/README.Arch`. The `PKGBUILD` is in `packaging/arch/` and is attached to the release.
+Differences from the Debian package: Telnet is not included, because Arch has no `libtelnet` package (use Docker or the .deb for Telnet); Arch's Tomcat runs as the `tomcat10` user, so SSH key files are group `tomcat10` (see [SSH keys](#ssh-keys)); the notes for Arch are in `/usr/share/doc/betterguac/README.Arch`. The `PKGBUILD` is in `packaging/arch/` and is attached to the release.
 
 ### Docker
 
