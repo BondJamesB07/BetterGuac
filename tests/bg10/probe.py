@@ -6,7 +6,7 @@ usage:
         -- create the connection through the REST API and open it through Tomcat's HTTP tunnel
 Prints counts and exits 0 when the session reached 'ready', streamed screen images and got no error.
 """
-import json, socket, sys, time, urllib.parse, urllib.request, ssl, threading
+import os, json, socket, sys, time, urllib.parse, urllib.request, ssl, threading
 
 WATCH = 15
 
@@ -129,8 +129,9 @@ def web(proto, host, port, user, pw, auser, apw, base):
     try: req('POST', '/tunnel?write:%s' % uuid, enc('disconnect').encode(), 'application/octet-stream').read()
     except Exception: pass
     ok = summarize(seen, total, syncs, 'web-tunnel %s' % proto, need_ready=False)
-    try: req('DELETE', '/api/session/data/%s/connections/%s?token=%s' % (ds, cid, T)).read()
-    except Exception as e: print('cleanup delete failed: %s' % e)
+    if os.environ.get('PROBE_KEEP') != '1':
+        try: req('DELETE', '/api/session/data/%s/connections/%s?token=%s' % (ds, cid, T)).read()
+        except Exception as e: print('cleanup delete failed: %s' % e)
     return ok
 
 if __name__ == '__main__':
