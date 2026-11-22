@@ -38,7 +38,7 @@ if [ ! -e "$STATE/.config-seeded" ]; then
     for jar in "$PKG_SHARE"/javaee/extensions/*.jar; do
         ln -sfn "/var/cache/betterguac/extensions/$(basename "$jar")" "$CONF/extensions/$(basename "$jar")"
     done
-    ln -sfn /usr/share/java/mariadb-java-client.jar "$CONF/lib/mariadb-java-client.jar"
+    ln -sfn /usr/share/betterguac/java/mariadb-java-client.jar "$CONF/lib/mariadb-java-client.jar"
     : > "$STATE/.config-seeded"
 fi
 

@@ -1,3 +1,30 @@
+betterguac (1.6.0+bg11) trixie; urgency=high
+
+  * Security: ship Apache Tomcat 10.1.62 in /usr/share/betterguac/tomcat and
+    run the web application on it (the tomcat10 drop-in sets CATALINA_HOME;
+    the distribution's tomcat10 service and configuration are still used).
+    The distributions' tomcat10 (Debian 10.1.60, Ubuntu 26.04 10.1.55) lack
+    the fixes in 10.1.60 to 10.1.62. The clustering jars (catalina-ha,
+    catalina-tribes) are left out: BetterGuac doesn't use clustering, and
+    the cluster issues still open upstream live there.
+  * Security: newer bundled libraries in the web application and the
+    MySQL/MariaDB extension: Jackson 2.21.8, Guava 33.8.0 (failureaccess
+    1.0.3), Logback 1.5.38, MyBatis 3.6.0 (with OGNL 3.4.16). Unmodified
+    upstream jars from Maven Central, checked against
+    upstream/third-party/SHA256SUMS (patches/0004-refresh-bundled-libs.py).
+  * Security: ship MariaDB Connector/J 2.7.15 instead of depending on the
+    distribution's libmariadb-java 2.7.6; the JDBC driver link in
+    /etc/betterguac/lib is moved to it on upgrade (a real file there is
+    left alone).
+  * The javax-to-jakarta conversion uses the migration tool that comes with
+    the bundled Tomcat; tomcat-jakartaee-migration and libmariadb-java are no
+    longer dependencies.
+  * Docker image: no tomcat10, tomcat-jakartaee-migration or libmariadb-java
+    packages; FreeRDP 3.33.1 from trixie-backports at run time; fixed user
+    IDs for tomcat (997) and mysql (100:101) so bg10 volumes keep working.
+
+ -- Robert Debs <robert@robertdebs.com>  Sun, 22 Nov 2026 17:00:00 -0600
+
 betterguac (1.6.0+bg10) trixie; urgency=medium
 
   * Activity page for administrators: sign-ins, failed sign-ins, sign-outs,

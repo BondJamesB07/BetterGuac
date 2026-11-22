@@ -29,6 +29,18 @@ Copyright: 2016-2026 The Apache Software Foundation
 License: Apache-2.0
 Comment: The unmodified Apache Guacamole 1.6.0 release files.
 
+Files: upstream/third-party/*
+Copyright: The Apache Software Foundation (Apache Tomcat 10.1.62);
+ FasterXML, LLC (Jackson); The Guava Authors; QOS.ch (Logback);
+ the MyBatis team; MariaDB Corporation Ab and contributors (Connector/J)
+License: Apache-2.0 and LGPL-2.1 and EPL-1.0
+Comment: Unmodified upstream releases, shipped because they are newer than
+ the copies in Apache Guacamole 1.6.0 or in the distribution and fix known
+ security issues: Apache Tomcat 10.1.62, Jackson 2.21.8, Guava 33.8.0,
+ failureaccess 1.0.3, MyBatis 3.6.0 (Apache-2.0); Logback 1.5.38 (dual
+ EPL-1.0 / LGPL-2.1); MariaDB Connector/J 2.7.15 (LGPL-2.1, see
+ "/usr/share/common-licenses/LGPL-2.1"). Where their source is: SOURCES.
+
 Files: addon/*
        addon-java/*
        files/*

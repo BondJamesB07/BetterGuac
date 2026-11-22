@@ -1,4 +1,4 @@
-# BetterGuac 1.6.0-bg10 image (package 1.6.0+bg10) template — native arm64 and amd64 (single container)
+# BetterGuac 1.6.0-bg11 image (package 1.6.0+bg11) template — native arm64 and amd64 (single container)
 #
 # No per-machine edits: the architecture is detected at build time from
 # Docker's TARGETARCH and the matching .deb is taken from
@@ -6,19 +6,19 @@
 #
 # The .deb is deliberately NOT shipped here. Put the package for the machine
 # you build on in ./debs/ first, e.g.
-#   debs/betterguac_1.6.0+bg10_arm64.deb   (arm64 / bondlab)
-#   debs/betterguac_1.6.0+bg10_amd64.deb   (amd64 / proxlab1)
+#   debs/betterguac_1.6.0+bg11_arm64.deb   (arm64 / bondlab)
+#   debs/betterguac_1.6.0+bg11_amd64.deb   (amd64 / proxlab1)
 # See README.md ("Put the .deb in debs/").
 FROM debian:trixie-slim
 
 ARG VCS_REF=unknown
 LABEL org.opencontainers.image.title="BetterGuac" \
-      org.opencontainers.image.version="1.6.0-bg10" \
+      org.opencontainers.image.version="1.6.0-bg11" \
       org.opencontainers.image.description="BetterGuac remote access (based on Apache Guacamole 1.6.0), single container" \
       org.opencontainers.image.licenses="Apache-2.0" \
       io.betterguac.sbom="/usr/share/betterguac/legal/sbom (Debian packages and their licenses; source notice in /usr/share/betterguac/legal/SOURCES)" \
       org.opencontainers.image.source="https://github.com/BondJamesB07/BetterGuac" \
-      io.betterguac.package-version="1.6.0+bg10" \
+      io.betterguac.package-version="1.6.0+bg11" \
       org.opencontainers.image.revision="${VCS_REF}"
 
 ARG DEBIAN_FRONTEND=noninteractive
@@ -29,7 +29,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 # through BuildKit's default platform. If it were ever empty, the COPY below
 # fails with a clear message; there is no silent cross-architecture build.
 ARG TARGETARCH
-ARG BETTERGUAC_VERSION=1.6.0+bg10
+ARG BETTERGUAC_VERSION=1.6.0+bg11
 
 # Build-time package workaround (see README.md "Package postinst workaround"):
 #  - policy-rc.d blocks invoke-rc.d, so no service is started at install time
@@ -66,21 +66,50 @@ RUN set -eux; \
     printf 'path-include /usr/share/doc/betterguac/*\npath-include /usr/share/man/man8/betterguac-*\npath-include /usr/share/lintian/overrides/betterguac\n' > /etc/dpkg/dpkg.cfg.d/zz-betterguac-docs; \
     printf '#!/bin/sh\nexit 101\n' > /usr/sbin/policy-rc.d; \
     chmod 0755 /usr/sbin/policy-rc.d; \
+    # fixed user and group IDs, the same as the bg10 image, so existing
+    # volumes (owned by tomcat 997:997 and mysql 100:101) keep working
+    groupadd --system --gid 101 mysql; \
+    useradd --system --uid 100 --gid 101 --home-dir /nonexistent --shell /bin/false --comment "MariaDB Server" mysql; \
+    groupadd --system --gid 997 tomcat; \
+    useradd --system --uid 997 --gid 997 --home-dir /var/lib/tomcat --shell /usr/sbin/nologin --comment "Apache Tomcat" tomcat; \
+    # FreeRDP 3.33.1 from trixie-backports at run time (guacd is built
+    # against trixie's FreeRDP 3; same library names and ABI)
+    printf 'Types: deb\nURIs: http://deb.debian.org/debian\nSuites: trixie-backports\nComponents: main\nSigned-By: /usr/share/keyrings/debian-archive-keyring.gpg\n' > /etc/apt/sources.list.d/backports.sources; \
     apt-get update; \
+    apt-get upgrade -y; \
     apt-get install -y --no-install-recommends \
         ca-certificates supervisor tini iproute2 procps curl \
         mariadb-client mariadb-server \
-        libcairo2 libfreerdp-client3-3 libfreerdp3-3 libglib2.0-0t64 \
+        libcairo2 libglib2.0-0t64 \
         libjpeg62-turbo libpango-1.0-0 libpangocairo-1.0-0 libpng16-16t64 \
         libpulse0 libssh2-1t64 libssl3t64 libtelnet2 libuuid1 \
-        libvncclient1 libwebp7 libwebsockets19t64 libwinpr3-3 \
-        fonts-dejavu-core libmariadb-java python3-pymysql python3-yaml \
-        tomcat10 tomcat-jakartaee-migration; \
+        libvncclient1 libwebp7 libwebsockets19t64 \
+        fonts-dejavu-core python3-pymysql python3-yaml default-jre-headless; \
+    apt-get install -y --no-install-recommends -t trixie-backports \
+        libfreerdp-client3-3 libfreerdp3-3 libwinpr3-3; \
+    test "$(getent passwd tomcat | cut -d: -f3,4)" = 997:997; \
+    test "$(getent passwd mysql | cut -d: -f3,4)" = 100:101; \
     mkdir -p /etc/betterguac/extensions /etc/betterguac/lib /var/lib/betterguac; \
     # Unpack + postinst. The postinst is expected to fail (no MariaDB yet).
     dpkg -i --force-depends /tmp/betterguac.deb \
         || echo "dpkg -i reported the expected postinst failure (no MariaDB at install time)"; \
     rm -f /tmp/betterguac.deb; \
+    # No tomcat10 package in the image: the web application runs on the
+    # Apache Tomcat 10.1.62 release the package ships. Lay out a Tomcat
+    # base like Debian's (/var/lib/tomcat10, conf -> /etc/tomcat10) from
+    # Tomcat's stock configuration, with the shutdown port off as Debian has it.
+    install -d -m 0755 -o root -g tomcat /etc/tomcat10; \
+    install -d -m 0775 -o root -g tomcat /etc/tomcat10/Catalina /etc/tomcat10/Catalina/localhost; \
+    install -m 0640 -o root -g tomcat /usr/share/betterguac/tomcat/conf-dist/* /etc/tomcat10/; \
+    sed -i 's#<Server port="8005" shutdown="SHUTDOWN">#<Server port="-1" shutdown="SHUTDOWN">#' /etc/tomcat10/server.xml; \
+    grep -q '<Server port="-1"' /etc/tomcat10/server.xml; \
+    install -d -m 0755 /var/lib/tomcat10; \
+    install -d -m 0775 -o tomcat -g tomcat /var/lib/tomcat10/webapps; \
+    install -d -m 0755 -o tomcat -g tomcat /var/lib/tomcat10/lib /var/lib/tomcat /var/cache/tomcat10; \
+    install -d -m 2750 -o tomcat -g adm /var/log/tomcat10; \
+    ln -s /etc/tomcat10 /var/lib/tomcat10/conf; \
+    ln -s ../../log/tomcat10 /var/lib/tomcat10/logs; \
+    ln -s ../../cache/tomcat10 /var/lib/tomcat10/work; \
     # The .deb ships symlinks inside /etc/betterguac/{extensions,lib}.
     # /etc/betterguac is replaced by an empty Docker volume at run time, so
     # re-create the same links now: the first-run init script copies them into
@@ -92,7 +121,7 @@ RUN set -eux; \
     for jar in /usr/share/betterguac/javaee/extensions/*.jar; do \
         ln -sfn "/var/cache/betterguac/extensions/$(basename "$jar")" "/etc/betterguac/extensions/$(basename "$jar")"; \
     done; \
-    ln -sfn /usr/share/java/mariadb-java-client.jar /etc/betterguac/lib/mariadb-java-client.jar; \
+    ln -sfn /usr/share/betterguac/java/mariadb-java-client.jar /etc/betterguac/lib/mariadb-java-client.jar; \
     # Start MariaDB for the duration of the build and finish the package setup.
     mariadbd-safe --skip-syslog >/tmp/mariadb-build.log 2>&1 & \
     for i in $(seq 1 90); do \
@@ -100,8 +129,15 @@ RUN set -eux; \
         sleep 1; \
     done; \
     mariadb --protocol=socket -uroot -e 'SELECT 1'; \
-    dpkg --configure betterguac; \
+    # tomcat10 is the package's only dependency the image leaves out (see
+    # above); everything else is installed
+    dpkg --force-depends --configure betterguac; \
     dpkg -s betterguac | grep -q '^Status: install ok installed'; \
+    # record that in dpkg's database, so apt in the container doesn't try
+    # to "fix" the missing tomcat10 by installing the old one
+    sed -i '/^Package: betterguac$/,/^$/ s/^\(Depends: .*\), tomcat10\(,\|$\)/\1\2/' /var/lib/dpkg/status; \
+    ! dpkg -s betterguac | grep '^Depends:' | grep -qw tomcat10; \
+    apt-get check; \
     mariadb-admin shutdown; \
     for i in $(seq 1 40); do pgrep -x mariadbd >/dev/null || break; sleep 1; done; \
     test "$(pgrep -x mariadbd | wc -l)" = 0; \

@@ -4,14 +4,15 @@
 # source with BetterGuac's patches, the stock Guacamole 1.6.0 web
 # application and extensions (converted for Tomcat 10 on the installed
 # machine), MariaDB, MFA, YAML sync and the Activity log.
-# Same build and license approach as the .deb: stock upstream jars,
+# Same build and license approach as the .deb: stock upstream jars (some
+# bundled libraries swapped for newer unmodified upstream releases),
 # change notices in every patched file, SOURCES in
 # /usr/share/betterguac/legal/.
 
 pkgname=betterguac
-_bgver=1.6.0-bg10
-pkgver=1.6.0+bg10
-pkgrel=3
+_bgver=1.6.0-bg11
+pkgver=1.6.0+bg11
+pkgrel=1
 pkgdesc='Remote access gateway (SSH, RDP, VNC) based on Apache Guacamole, with MFA, YAML sync and an activity log'
 arch=('x86_64' 'aarch64')
 url='https://betterguac.org'
@@ -157,17 +158,13 @@ package() {
   local S="$P/usr/lib/betterguac/betterguac-setup"
   sed -i \
     -e 's/^TOMCAT_GROUP=tomcat$/TOMCAT_GROUP=tomcat10/' \
-    -e 's#tool=$(command -v javax2jakarta || true)#tool=$(command -v /usr/lib/betterguac/javax2jakarta || true)#' \
-    -e 's#install the tomcat-jakartaee-migration package#reinstall the betterguac package#' \
-    -e "s#dpkg-query -W -f='\${Version}' tomcat-jakartaee-migration 2>/dev/null || true#echo jakartaee-migration-${_jem}#" \
+    -e 's#^MIGRATION_TOOL=$#MIGRATION_TOOL=/usr/lib/betterguac/javax2jakarta#' \
     -e "s#dpkg-query -W -f='\${Version}' betterguac 2>/dev/null || echo \"\${BETTERGUAC_VERSION:-unknown}\"#echo \"${pkgver}-${pkgrel}\"#" \
     -e 's#then run: sudo dpkg --configure -a#then run: sudo betterguac-admin configure#' \
-    -e "s#with Debian's Apache#with the Apache#" \
     -e 's#hostname -I 2>/dev/null#{ hostname -I 2>/dev/null || ip -4 -o route get 1.1.1.1 2>/dev/null | sed -n "s/.* src \\([0-9.]*\\).*/\\1/p"; }#' \
     "$S"
   grep -q '^TOMCAT_GROUP=tomcat10$' "$S"
-  grep -q '/usr/lib/betterguac/javax2jakarta' "$S"
-  grep -q "echo jakartaee-migration-${_jem}" "$S"
+  grep -q '^MIGRATION_TOOL=/usr/lib/betterguac/javax2jakarta$' "$S"
   grep -q "echo \"${pkgver}-${pkgrel}\"" "$S"
   ! grep -q 'dpkg' "$S"
   sed -i 's#chown root:tomcat %s#chown root:tomcat10 %s#' "$P/usr/lib/betterguac/sync/betterguac_sync.py"
