@@ -2,7 +2,7 @@ BetterGuac on Arch Linux
 ========================
 
 Install
-  sudo pacman -U betterguac-1.6.0+bg10-2-x86_64.pkg.tar.zst     (or -aarch64)
+  sudo pacman -U betterguac-1.6.0+bg10-3-x86_64.pkg.tar.zst     (or -aarch64)
 
   pacman pulls in Tomcat 10, MariaDB, a Java runtime and the guacd
   libraries. The install then:
@@ -50,9 +50,24 @@ Tomcat's own example apps
   then also skip BetterGuac, which is deployed from
   /etc/tomcat10/Catalina/localhost/, and every page returns 404.
 
-Installed with 1.6.0+bg10-1?
-  That build initialised MariaDB with Arch's defaults. If BetterGuac is the
-  only user of this MariaDB, close it the same way:
+Upgrading from bg10-1
+  1.6.0+bg10-1 initialised MariaDB with Arch's defaults: anonymous accounts,
+  an open test database, listening on every interface. Upgrading to bg10-3
+  or later closes it the way a fresh install sets it up: it drops the
+  anonymous accounts and the empty test database and writes
+  /etc/my.cnf.d/betterguac-local.cnf (127.0.0.1 only), then restarts
+  MariaDB. BetterGuac's databases, settings and accounts are not touched.
+
+  It does this only when pacman's log (/var/log/pacman.log) shows that the
+  bg10-1 install script initialised this MariaDB. A MariaDB set up some
+  other way is left as it is. It runs once: /var/lib/betterguac/
+  mariadb-closed-by-package records what it changed, and while that file
+  exists later upgrades leave MariaDB alone, so you can open it up again.
+  A test database with tables in it, or a bind-address you set yourself,
+  is kept.
+
+  If you cannot upgrade, and BetterGuac is the only user of this MariaDB,
+  close it by hand:
     sudo mariadb -e "DELETE FROM mysql.global_priv WHERE user=''; DROP DATABASE IF EXISTS test; FLUSH PRIVILEGES;"
     printf '[mysqld]\nbind-address=127.0.0.1\n' | sudo tee /etc/my.cnf.d/betterguac-local.cnf
     sudo systemctl restart mariadb

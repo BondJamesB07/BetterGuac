@@ -11,7 +11,7 @@
 pkgname=betterguac
 _bgver=1.6.0-bg10
 pkgver=1.6.0+bg10
-pkgrel=2
+pkgrel=3
 pkgdesc='Remote access gateway (SSH, RDP, VNC) based on Apache Guacamole, with MFA, YAML sync and an activity log'
 arch=('x86_64' 'aarch64')
 url='https://betterguac.org'
@@ -68,7 +68,7 @@ sha256sums=('9a0cd2923247eb40c4a0ead96d97c4bebf6c4f2b7262714ac9cdf64b210462a6'
             'c8cfa082f122323774057c2808eb7e796703bde9459fa04ff6f2c9cc25f74eff'
             '430707b9c65356beac09347cddb600f7289c0bfbc6f98f131c34edce55dcd26f'
             'dc1ed4a63255ffc7a245776bce1b2db986b9847eec89d5d4f6a502a977ea81a8'
-            '878bda459b6258ac25da606574466681ba5a18db683bd9a8a996605bd8c003b0'
+            '051374c8737d604eff44b39b8dbc660af33f403ce4e5824b350c5d71b7e299ca'
             '44c11853603626fd7524a6d2bc80e33cb181beedeb2f34ba286e01762a4ede8c')
 
 _gprefix=/usr/lib/betterguac/guacd
