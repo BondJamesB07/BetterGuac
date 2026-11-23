@@ -61,7 +61,7 @@ source=(
 )
 noextract=("mariadb-java-client-${_mjc}.jar" 'guacamole-server-1.6.0.tar.gz'
            'guacamole-auth-jdbc-1.6.0.tar.gz' 'guacamole-auth-totp-1.6.0.tar.gz')
-sha256sums=('9a0cd2923247eb40c4a0ead96d97c4bebf6c4f2b7262714ac9cdf64b210462a6'
+sha256sums=('b73373df78e1a051f6626fd67e2bdd88b43c5f666fb7518bf3c991fab7066914'
             '8bc45675da96d7b6f39728160181e3d4ff3c08f460f6d26de5805b642bf13f2b'
             '97bc5fd3d67d25c0e98a475d1dfd308a037859f549fac47171c723b7a7039366'
             '0202c197d3b4e59e69b4dde2a80906adf5f03a497748b74ad3d599022e26f347'
@@ -69,7 +69,7 @@ sha256sums=('9a0cd2923247eb40c4a0ead96d97c4bebf6c4f2b7262714ac9cdf64b210462a6'
             'c8cfa082f122323774057c2808eb7e796703bde9459fa04ff6f2c9cc25f74eff'
             '430707b9c65356beac09347cddb600f7289c0bfbc6f98f131c34edce55dcd26f'
             'dc1ed4a63255ffc7a245776bce1b2db986b9847eec89d5d4f6a502a977ea81a8'
-            '051374c8737d604eff44b39b8dbc660af33f403ce4e5824b350c5d71b7e299ca'
+            '950c46e8c187166cdc52575b91c923a3c4bb56e8dbad19c21104ed27126ae9ff'
             '44c11853603626fd7524a6d2bc80e33cb181beedeb2f34ba286e01762a4ede8c')
 
 _gprefix=/usr/lib/betterguac/guacd
