@@ -43,7 +43,7 @@ python3 /root/probe.py web rdp "$TARGET" 3389 probe "$TPW" "$U" "$P" >/dev/null 
 count(){ echo "$(sql -e "SELECT COUNT(*) FROM guacamole_connection") conns, $(sql -e "SELECT COUNT(*) FROM guacamole_entity WHERE type='USER'") users, $(sql -e "SELECT COUNT(*) FROM guacamole_connection_permission") conn-perms, $(sql -e "SELECT COUNT(*) FROM guacamole_system_permission") sys-perms, $(sql -e "SELECT COUNT(*) FROM guacamole_user_attribute") user-attrs, $(sql -e "SELECT COUNT(*) FROM guacamole_user_group") groups, $(sql -e "SELECT COUNT(*) FROM guacamole_connection_history") history"; }
 BEFORE=$(count); echo "before upgrade: $BEFORE"
 ( cd /etc/betterguac && find . -type f | sort | xargs sha256sum ) > /root/etc-before.sum
-apt-get install -y -qq /root/new.deb > /root/new-inst.log 2>&1 && pass "upgrade with apt install of the bg10 .deb" || { fail "upgrade"; tail -n 20 /root/new-inst.log; }
+apt-get install -y -qq /root/new.deb > /root/new-inst.log 2>&1 && pass "upgrade with apt install of the bg11 .deb" || { fail "upgrade"; tail -n 20 /root/new-inst.log; }
 grep -E "backing up|schema|preparing the web|error|warning" -i /root/new-inst.log | head -n 10
 sleep 3; wait_web && pass "web app answers after upgrade" || fail "web app after upgrade"
 for s in betterguac-guacd tomcat10 mariadb; do systemctl is-active --quiet "$s" && pass "service $s active after upgrade" || fail "service $s after upgrade"; done

@@ -18,6 +18,10 @@ SYNC_DB=betterguac_yamlsync
 SYNC_USER=betterguac_sync
 TOMCAT_GROUP=tomcat
 CTXDIR=/etc/tomcat10/Catalina/localhost
+# the javax-to-jakarta converter; empty: the Apache Tomcat migration tool
+# shipped in the bundled Tomcat's lib folder (Debian/Ubuntu package and
+# container image). The Arch package sets its own wrapper here.
+MIGRATION_TOOL=
 CONTEXT=$CTXDIR/betterguac.xml
 JAVAEE=$SHARE/javaee
 WEBCACHE=/var/cache/betterguac
@@ -204,17 +208,39 @@ sync_instance_and_yaml() {
 # ------------------------------------------------------ web application for Tomcat 10
 # The package ships the web application and extensions as built for javax.*,
 # with their third-party libraries (some under the EPL and CDDL) unmodified.
-# They are converted to jakarta.* here, on this machine, with Debian's Apache
-# Tomcat migration tool: the same conversion Tomcat 10 applies to an
+# They are converted to jakarta.* here, on this machine, with the Apache
+# Tomcat migration tool shipped in the bundled Tomcat's lib folder: the same
+# conversion Tomcat 10 applies to an
 # application placed in its webapps-javaee folder. The result lives in
 # /var/cache/betterguac and is rebuilt whenever the shipped files change.
 prepare_webapp() {
     local tool stamp new tmp j
-    tool=$(command -v javax2jakarta || true)
-    [ -n "$tool" ] || die "javax2jakarta is missing (install the tomcat-jakartaee-migration package)"
+    local -a convert
+    if [ -n "$MIGRATION_TOOL" ]; then
+        tool=$MIGRATION_TOOL
+        [ -x "$tool" ] || tool=
+        convert=("$tool")
+    else
+        # the Apache Tomcat migration tool shipped with the bundled Tomcat
+        tool=$(ls /usr/share/betterguac/tomcat/lib/jakartaee-migration-*-shaded.jar 2>/dev/null | head -n1)
+        convert=(java -cp "$tool" org.apache.tomcat.jakartaee.MigrationCLI)
+    fi
+    [ -n "$tool" ] || die "the Tomcat migration tool is missing; reinstall the betterguac package"
     [ -f "$JAVAEE/guacamole.war" ] || die "$JAVAEE/guacamole.war is missing; reinstall the betterguac package"
+    # the JDBC driver link: the package ships MariaDB Connector/J itself now;
+    # move a link that still points at the distribution's copy (older
+    # releases, copied or restored settings, container volumes) or at nothing.
+    # A real file someone put there is left alone.
+    j=$CONF/lib/mariadb-java-client.jar
+    if [ -L "$j" ] || [ ! -e "$j" ]; then
+        case "$(readlink "$j" 2>/dev/null)" in
+            /usr/share/betterguac/java/mariadb-java-client.jar) ;;
+            *) install -d -m 0755 "$CONF/lib"
+               ln -sfn /usr/share/betterguac/java/mariadb-java-client.jar "$j" ;;
+        esac
+    fi
     stamp=$( { (cd "$JAVAEE" && find . -type f | LC_ALL=C sort | xargs sha256sum); \
-               dpkg-query -W -f='${Version}' tomcat-jakartaee-migration 2>/dev/null || true; } | sha256sum | cut -d' ' -f1)
+               sha256sum "$tool"; } | sha256sum | cut -d' ' -f1)
     if [ -f "$WEBCACHE/.stamp" ] && [ "$(cat "$WEBCACHE/.stamp")" = "$stamp" ] \
        && [ -f "$WEBCACHE/webapp/WEB-INF/web.xml" ]; then
         return 0
@@ -224,10 +250,10 @@ prepare_webapp() {
     tmp=$(mktemp -d "$WEBCACHE/.new.XXXXXX")
     chmod 0755 "$tmp"
     mkdir -p "$tmp/webapp" "$tmp/extensions"
-    "$tool" -profile=TOMCAT "$JAVAEE/guacamole.war" "$tmp/guacamole.war" >"$tmp/convert.log" 2>&1 \
+    "${convert[@]}" -profile=TOMCAT "$JAVAEE/guacamole.war" "$tmp/guacamole.war" >"$tmp/convert.log" 2>&1 \
         || { cat "$tmp/convert.log" >&2; rm -rf "$tmp"; die "converting the web application failed"; }
     for j in "$JAVAEE"/extensions/*.jar; do
-        "$tool" -profile=TOMCAT "$j" "$tmp/extensions/$(basename "$j")" >>"$tmp/convert.log" 2>&1 \
+        "${convert[@]}" -profile=TOMCAT "$j" "$tmp/extensions/$(basename "$j")" >>"$tmp/convert.log" 2>&1 \
             || { cat "$tmp/convert.log" >&2; rm -rf "$tmp"; die "converting $(basename "$j") failed"; }
     done
     python3 - "$tmp/guacamole.war" "$tmp/webapp" <<'PYEOF' || { rm -rf "$tmp"; die "unpacking the web application failed"; }

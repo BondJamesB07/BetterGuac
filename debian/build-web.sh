@@ -95,5 +95,10 @@ cp "$W"/guacamole-auth-jdbc-1.6.0/mysql/schema/*.sql "$W/schema/"
 
 # --- Shipped as javax.*: converted to jakarta.* on the installed machine ---
 (cd "$W/war" && find . -type f | LC_ALL=C sort | sed 's#^\./##' | zip -q -X -@ "$W/out/guacamole-javax.war")
+# newer upstream releases of bundled third-party libraries (security fixes);
+# see patches/0004-refresh-bundled-libs.py and upstream/third-party/
+python3 "$S/patches/0004-refresh-bundled-libs.py" "$S/upstream/third-party" \
+    "$W/out/guacamole-javax.war" "$W/ext/guacamole-auth-jdbc-mysql-1.6.0.jar" \
+    "$W/ext/guacamole-auth-totp-1.6.0.jar"
 cp "$W"/ext/*.jar "$W/out/"
 ls -l "$W/out"

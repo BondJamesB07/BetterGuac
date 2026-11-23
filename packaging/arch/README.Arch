@@ -2,7 +2,7 @@ BetterGuac on Arch Linux
 ========================
 
 Install
-  sudo pacman -U betterguac-1.6.0+bg10-3-x86_64.pkg.tar.zst     (or -aarch64)
+  sudo pacman -U betterguac-1.6.0+bg11-1-x86_64.pkg.tar.zst     (or -aarch64)
 
   pacman pulls in Tomcat 10, MariaDB, a Java runtime and the guacd
   libraries. The install then:

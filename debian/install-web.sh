@@ -5,7 +5,8 @@ set -eu
 B=$1; P=$2; S=$(pwd); W=$B/web
 SH=$P/usr/share/betterguac
 # The web application and extensions are shipped as built (javax.*), with
-# their third-party libraries unmodified. betterguac-setup converts them for
+# some bundled third-party libraries swapped for newer upstream releases by
+# build-web.sh (patches/0004-refresh-bundled-libs.py). betterguac-setup converts them for
 # Tomcat 10 into /var/cache/betterguac on the installed machine.
 mkdir -p "$SH/javaee/extensions" "$SH/schema" "$SH/templates"
 install -m 644 "$W/out/guacamole-javax.war" "$SH/javaee/guacamole.war"
@@ -39,7 +40,7 @@ install -m 644 files/guacd.conf "$P/etc/betterguac/guacd.conf"
 for j in "$SH"/javaee/extensions/*.jar; do
     ln -s "/var/cache/betterguac/extensions/$(basename "$j")" "$P/etc/betterguac/extensions/$(basename "$j")"
 done
-ln -s /usr/share/java/mariadb-java-client.jar "$P/etc/betterguac/lib/mariadb-java-client.jar"
+ln -s /usr/share/betterguac/java/mariadb-java-client.jar "$P/etc/betterguac/lib/mariadb-java-client.jar"
 
 # Tomcat 10 drop-in: GUACAMOLE_HOME
 mkdir -p "$P/usr/lib/systemd/system/tomcat10.service.d"

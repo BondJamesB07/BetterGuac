@@ -25,7 +25,6 @@ Build-Depends: debhelper-compat (= 13),
                libwebsockets-dev,
                pkgconf,
                python3,
-               tomcat-jakartaee-migration,
                uuid-dev,
                zip,
                unzip
@@ -38,13 +37,12 @@ Depends: ${shlibs:Depends},
          ${misc:Depends},
          mariadb-server,
          mariadb-client,
-         tomcat-jakartaee-migration,
          fonts-dejavu-core,
-         libmariadb-java,
          python3,
          python3-pymysql,
          python3-yaml,
-         tomcat10
+         tomcat10,
+         default-jre-headless | java17-runtime-headless
 Conflicts: guacd, libguac-client-rdp0
 Description: remote access gateway based on Apache Guacamole
  BetterGuac is a clientless remote desktop gateway for SSH, RDP, VNC and

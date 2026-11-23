@@ -3,7 +3,7 @@ Where to get the source code of BetterGuac and what it ships
 
 BetterGuac itself
   https://github.com/BondJamesB07/BetterGuac
-  Every release is tagged (v1.6.0-bg10 for this release). The tag holds the
+  Every release is tagged (v1.6.0-bg11 for this release). The tag holds the
   BetterGuac code, the patches applied to Apache Guacamole and the build
   scripts that produce the .deb and Docker image.
 
@@ -18,9 +18,17 @@ Apache Guacamole 1.6.0 (Apache License 2.0)
 Third-party Java libraries inside the web application
   The Apache Guacamole web application (guacamole.war) bundles libraries
   under their own licenses. Their licenses are in META-INF/LICENSE and
-  META-INF/bundled/ inside the WAR. These are shipped unmodified, as they
-  come in the Apache Guacamole 1.6.0 release. The ones under the Eclipse
-  Public License 2.0 or the CDDL 1.1, and where their source is:
+  META-INF/bundled/ inside the WAR. They are shipped as they come in the
+  Apache Guacamole 1.6.0 release, except that BetterGuac replaces some of
+  them with newer, unmodified upstream releases from Maven Central that fix
+  known security issues (patches/0004-refresh-bundled-libs.py; the jars are
+  checked against upstream/third-party/SHA256SUMS):
+    Jackson 2.19.0 -> 2.21.8 (annotations 2.21), Guava 32.1.3 -> 33.8.0,
+    failureaccess 1.0.1 -> 1.0.3, Logback 1.3.15 -> 1.5.38, and MyBatis
+    3.5.19 -> 3.6.0 (with its built-in OGNL 3.4.16) inside the MySQL/MariaDB
+    extension.
+  The ones under the Eclipse Public License 2.0, the CDDL 1.1 or the LGPL,
+  and where their source is:
     Eclipse Jersey 2.46 ........ https://github.com/eclipse-ee4j/jersey (tag 2.46)
     Eclipse HK2 2.6.1 .......... https://github.com/eclipse-ee4j/glassfish-hk2 (tag 2.6.1)
     Jakarta Annotations 1.3.5 .. https://github.com/jakartaee/common-annotations-api (tag 1.3.5)
@@ -29,16 +37,40 @@ Third-party Java libraries inside the web application
     Jakarta Inject (HK2) 2.6.1 . https://github.com/eclipse-ee4j/glassfish-hk2 (tag 2.6.1)
     OSGi Resource Locator 1.0.3  https://github.com/eclipse-ee4j/glassfish-hk2-extra (tag 1.0.3-RELEASE)
     JSR-250 API 1.0 ............ https://repo1.maven.org/maven2/javax/annotation/jsr250-api/1.0/
-    Logback 1.3.15 (EPL 1.0 /
-      LGPL 2.1) ................ https://github.com/qos-ch/logback (tag v_1.3.15)
+    Logback 1.5.38 (EPL 1.0 /
+      LGPL 2.1) ................ https://github.com/qos-ch/logback (tag v_1.5.38)
   Source jars for all of them are also on Maven Central,
   https://repo1.maven.org/maven2/, next to each library's binary jar.
 
   For Tomcat 10, betterguac-setup converts the WAR and the extensions from
   javax.* to jakarta.* on the machine where BetterGuac is installed, with
-  Debian's Apache Tomcat migration tool (package tomcat-jakartaee-migration,
-  Apache License 2.0). The converted copy lives in /var/cache/betterguac and
-  is rebuilt by: sudo betterguac-admin webapp
+  the Apache Tomcat migration tool that comes with the bundled Tomcat
+  (lib/jakartaee-migration-1.0.13-shaded.jar, Apache License 2.0; the Arch
+  package ships the same tool's binary release instead, see below). The
+  converted copy lives in /var/cache/betterguac and is rebuilt by:
+  sudo betterguac-admin webapp
+
+Apache Tomcat 10.1.62 (Apache License 2.0; Debian/Ubuntu package and Docker image)
+  https://archive.apache.org/dist/tomcat/tomcat-10/v10.1.62/
+  The .deb and the Docker image ship the unmodified Apache Tomcat 10.1.62 binary release in
+  /usr/share/betterguac/tomcat (bin/ and lib/, without the clustering jars
+  catalina-ha and catalina-tribes, which BetterGuac doesn't use), and the
+  web application runs on it instead of the distribution's older tomcat10.
+  The distribution's tomcat10 service and configuration are still used
+  (the Docker image has no tomcat10 package and uses Tomcat's own stock
+  configuration). The Arch package uses Arch's tomcat10.
+  Tomcat's LICENSE and NOTICE are in /usr/share/betterguac/legal/apache-tomcat.
+  Source: apache-tomcat-10.1.62-src.tar.gz in the src/ folder of the address
+  above, or tag 10.1.62 of https://github.com/apache/tomcat
+
+MariaDB Connector/J 2.7.15 (GNU LGPL 2.1)
+  /usr/share/betterguac/java/mariadb-java-client-2.7.15.jar, unmodified (its
+  license is in /usr/share/betterguac/legal/mariadb-connector-j), from
+  https://repo1.maven.org/maven2/org/mariadb/jdbc/mariadb-java-client/2.7.15/
+  (its source jar is next to it there), and tag 2.7.15 of
+  https://github.com/mariadb-corporation/mariadb-connector-j
+  To use your own build of Connector/J instead, replace the link
+  /etc/betterguac/lib/mariadb-java-client.jar with a regular file.
 
 Debian and Ubuntu packages (Docker image)
   The Docker image is built on debian:trixie-slim and contains Debian

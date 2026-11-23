@@ -56,6 +56,7 @@ override_dh_auto_install:
 	rm -f $(PKG)$(GUACD_PREFIX)/bin/guacenc $(PKG)$(GUACD_PREFIX)/bin/guaclog
 	rmdir $(PKG)$(GUACD_PREFIX)/bin || true
 	sh debian/install-web.sh $(B) $(PKG)
+	sh debian/install-runtime.sh $(B) $(PKG)
 
 override_dh_installsystemd:
 	dh_installsystemd --name=betterguac-guacd
