@@ -34,11 +34,11 @@ Your users open a browser, sign in with their email address and an authenticator
 - **RDP fix included.** guacd ships with a FreeRDP 3 post-connect graphics fix.
 - **Activity log.** Administrators see who signed in, failed sign-ins, two-factor events, server sessions with their length, admin changes and YAML sync applies on the Activity page, with filters, search and CSV export. Activity is kept for 365 days by default.
 - **Automatic database updates.** Upgrades apply BetterGuac's numbered database changes in order, after a backup of the database.
-- Security refresh (new in bg11). Tomcat 10.1.62 bundled in the Debian/Ubuntu package and Docker image, clustering jars removed, all 9 Tomcat Critical findings from bg10 are gone from the Docker image. Newer libraries: Jackson 2.21.8, Guava 33.8.0, Logback 1.5.38, MyBatis 3.6.0. MariaDB Connector/J 2.7.15 bundled in the .deb and Arch packages; the .deb no longer depends on libmariadb-java or tomcat-jakartaee-migration.
+- Security refresh (new in bg11). Tomcat 10.1.62 bundled in the Debian/Ubuntu package and Docker image, clustering jars removed, all 9 Tomcat Critical findings from bg10 are gone from the Docker image. Newer libraries in the .deb, Arch packages and Docker image: Jackson 2.21.8, Guava 33.8.0, Logback 1.5.38, MyBatis 3.6.0. MariaDB Connector/J 2.7.15 bundled in the .deb and Arch packages and in the Docker image; the .deb no longer depends on libmariadb-java or tomcat-jakartaee-migration.
 
 ## Security status
 
-bg11 is a security update. It reduces Scout findings but doesn't clear them. bg11 changes no features or database schema; no migration runs on upgrade from bg10. In the Docker image, Docker Scout reports 3 Critical findings, all in freerdp3 3.33.1: CVE-2026-121392, CVE-2026-121952, and CVE-2026-121953. That's down from 12 Critical in bg10, and total findings went from 414 to 318 (amd64) and 317 (arm64). The upstream fix landed in FreeRDP 3.32.2 and is included in 3.33.1, while Debian's trixie tracker has not marked the package fixed, so Scout still counts them. One fixable High is still open, CVE-2026-23949 in jaraco-context 6.0.1, fixed in 6.1.0. The top-scoring Highs are FreeRDP. Arch keeps Tomcat 10.1.61, which still lacks four fixes from 10.1.62.
+bg11 is a security update. It reduces Scout findings but doesn't clear them. bg11 changes no features or database schema; no migration runs on upgrade from bg10. In the Docker image, Docker Scout reports 3 Critical findings, all in freerdp3 3.33.1: CVE-2026-121392, CVE-2026-121952, and CVE-2026-121953. That's down from 12 Critical in bg10. Total findings went from 414 in bg10 to 306 (amd64) and 307 (arm64) in a Scout scan of the refreshed bg11 image on November 23, 2026: 3 Critical on both, 86 High on amd64 and 87 on arm64. Scout's totals move as its database changes, so treat them as a snapshot. The upstream fix landed in FreeRDP 3.32.2 and is included in 3.33.1, while Debian's trixie tracker has not marked the package fixed, so Scout still counts them. In that scan Scout lists one fixable High, in the arm64 image: CVE-2026-23949 in jaraco-context 6.0.1, fixed in 6.1.0. The top-scoring Highs are FreeRDP. Arch keeps Tomcat 10.1.61, which still lacks four fixes from 10.1.62.
 
 ## Tested / not yet tested
 
@@ -120,6 +120,15 @@ docker compose exec betterguac cat /etc/betterguac/initial-admin.txt
 ```
 
 Current Docker tags: 1.6.0-bg11 and latest, plus 1.6.0-bg11-amd64 and 1.6.0-bg11-arm64.
+
+**Image refresh, November 23, 2026.** The 1.6.0-bg11 and latest tags now point to a rebuilt image (commit 14fc317 on main): Debian 13.8 with the Debian updates available at build time, and no curl, because the healthcheck now uses bash. The BetterGuac package inside is still 1.6.0+bg11, with no feature or database change, and it carries the bg11 libraries listed above. If you already run the bg11 image, pull it again and recreate the container; the named volumes, and your data in them, stay:
+
+```bash
+docker compose pull
+docker compose up -d --wait
+```
+
+The .deb and Arch packages and the v1.6.0-bg11 tag were not rebuilt, so installs from the packages don't change.
 
 Then browse to `http://127.0.0.1:8080/betterguac/` on the Docker host. Port 8080 is published on loopback only; put a reverse proxy or a private tunnel in front for access from other machines.
 
