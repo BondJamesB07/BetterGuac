@@ -51,9 +51,9 @@ Description: remote access gateway based on Apache Guacamole
  BetterGuac is a clientless remote desktop gateway for SSH, RDP, VNC and
  Telnet, built on Apache Guacamole 1.6.0. This package installs everything
  on one machine: guacd (with the FreeRDP 3 post-connect graphics fix), the
- web application on the bundled Apache Tomcat 10.1, MariaDB storage, two-factor sign-in, the
- BetterGuac interface and profile extension, SSH keys referenced by file
- path, and the YAML-to-database sync tool.
+ web application on the bundled Apache Tomcat 10.1, MariaDB storage,
+ two-factor sign-in, the BetterGuac interface and profile extension, SSH
+ keys referenced by file path, and the YAML-to-database sync tool.
  .
  A fresh install creates an empty database with a random password and one
  administrator account. No servers, users or keys are included.
