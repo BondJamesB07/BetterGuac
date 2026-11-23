@@ -4,7 +4,7 @@ BetterGuac is a clientless remote access gateway for SSH, RDP, VNC and Telnet, b
 
 Your users open a browser, sign in with their email address and an authenticator code, and see only the servers you assigned to them. No VPN client, no browser plugin, no Java applet.
 
-> This README describes release 1.6.0+bg11.
+> This README describes release 1.6.0+bg11. It is a full release as of November 23, 2026; it was a pre-release until then. Full release means it passed the tests listed under "Tested / not yet tested", not that every platform has been tested.
 
 ## Contents
 
@@ -44,7 +44,7 @@ bg11 is a security update. It reduces Scout findings but doesn't clear them. bg1
 
 ## Tested / not yet tested
 
-Tested in bg11: .deb fresh installs and bg10 upgrades in Debian 13 and Ubuntu 26.04 containers, amd64 and arm64, sign-in, MFA, YAML sync, SSH, RDP and VNC, Activity, database migration check (no schema change). Docker fresh start 18 of 18, upgrade on bg10 volumes 29 of 29, amd64 and arm64. Arch install suite 87 of 87 and MariaDB checks 7 of 7, x86_64 and aarch64, upgrades from bg10-1 and bg10-3. Two real Ubuntu 26.04 servers, upgraded from bg10, Tomcat 10.1.62, data unchanged.
+Tested in bg11: .deb fresh installs and bg10 upgrades in Debian 13 and Ubuntu 26.04 containers, amd64 and arm64, sign-in, MFA, YAML sync, SSH, RDP and VNC, Activity, database migration check (no schema change). Docker fresh start 18 of 18, upgrade on bg10 volumes 29 of 29, amd64 and arm64. Arch install suite 87 of 87 and MariaDB checks 7 of 7, x86_64 and aarch64, upgrades from bg10-1 and bg10-3. Two real Ubuntu 26.04 servers, upgraded from bg10, Tomcat 10.1.62, data unchanged; on the production server, with the earlier bg11 .deb, the owner signed in with two-factor and used SSH, RDP to two Windows servers, and two Cisco switches.
 
 Tested for the rebuilt .deb (November 23): fresh installs in Debian 13 (with trixie-backports) and Ubuntu 26.04 arm64 containers, 79 of 79 checks each, including RDP and VNC sessions through guacd and the web app; a fresh install in a Debian 13 amd64 container (with trixie-backports), 67 of 67 checks including RDP and VNC; an upgrade from the earlier bg11 .deb in a Debian 13 amd64 container, 71 of 72 checks; upgrades from the earlier bg11 .deb in Debian 13 and Ubuntu 26.04 arm64 containers and from bg10 in a Debian 13 arm64 container, data and settings unchanged (the check for a pre-migration database backup did not pass because bg11 has no migration to run); one real Ubuntu 26.04 amd64 server upgraded from the earlier bg11 .deb with `--reinstall` and the distribution's Tomcat removed afterwards, health check 5 of 5, users, connections and two-factor setups intact.
 
