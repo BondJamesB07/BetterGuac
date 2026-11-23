@@ -6,6 +6,9 @@ PartOf=betterguac.target
 # the same Tomcat base and port the distribution's tomcat10 service uses
 # (installs from before kept the tomcat10 package): only one runs
 Conflicts=tomcat10.service
+# Conflicts= alone does not order the jobs: without this, Tomcat can start
+# before tomcat10 has let go of port 8080
+After=tomcat10.service
 RequiresMountsFor=/var/log/tomcat10 /var/lib/tomcat10
 
 [Service]

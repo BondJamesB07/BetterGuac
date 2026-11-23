@@ -362,7 +362,7 @@ PYEOF
             # app on the same base and port. betterguac-web replaces it
             # (Conflicts=tomcat10.service), so keep it from starting at boot.
             say "the web app now runs as betterguac-web; turning off the distribution's tomcat10 service"
-            systemctl disable --quiet tomcat10.service 2>/dev/null || true
+            systemctl disable --quiet --now tomcat10.service 2>/dev/null || true
             say "the tomcat10 package is no longer needed: sudo apt remove tomcat10 tomcat10-common libtomcat10-java"
         fi
         systemctl enable --quiet "$TOMCAT_SERVICE.service" mariadb.service betterguac.target 2>/dev/null || true
