@@ -1,0 +1,45 @@
+[Unit]
+Description=BetterGuac web application (Apache Tomcat 10.1)
+Documentation=file:///usr/share/doc/betterguac/README.Debian
+After=network.target mariadb.service betterguac-guacd.service
+PartOf=betterguac.target
+# the same Tomcat base and port the distribution's tomcat10 service uses
+# (installs from before kept the tomcat10 package): only one runs
+Conflicts=tomcat10.service
+RequiresMountsFor=/var/log/tomcat10 /var/lib/tomcat10
+ConditionPathExists=/etc/tomcat10/server.xml
+
+[Service]
+# BetterGuac ships Apache Tomcat 10.1.62 (newer than the distributions'
+# tomcat10, with its security fixes) in /usr/share/betterguac/tomcat and runs
+# it with the Tomcat base in /var/lib/tomcat10 (conf -> /etc/tomcat10).
+Environment=CATALINA_HOME=/usr/share/betterguac/tomcat
+Environment=CATALINA_BASE=/var/lib/tomcat10
+Environment=CATALINA_TMPDIR=/tmp
+Environment=GUACAMOLE_HOME=/etc/betterguac
+Environment=JAVA_OPTS=-Djava.awt.headless=true
+# JAVA_HOME, JAVA_OPTS or CATALINA_OPTS of your own, if you set any
+EnvironmentFile=-/etc/default/tomcat10
+EnvironmentFile=-/etc/default/betterguac-web
+WorkingDirectory=/var/lib/tomcat10
+Type=simple
+ExecStart=/usr/share/betterguac/tomcat/bin/catalina.sh run
+SuccessExitStatus=143
+Restart=on-failure
+RestartSec=5
+SyslogIdentifier=betterguac-web
+
+User=tomcat
+Group=tomcat
+PrivateTmp=yes
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+NoNewPrivileges=true
+CacheDirectory=tomcat10
+CacheDirectoryMode=750
+ProtectSystem=strict
+ReadWritePaths=/etc/tomcat10/Catalina/
+ReadWritePaths=/var/lib/tomcat10/webapps/
+ReadWritePaths=/var/log/tomcat10/
+
+[Install]
+WantedBy=multi-user.target betterguac.target

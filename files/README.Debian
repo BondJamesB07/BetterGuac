@@ -1,6 +1,19 @@
 BetterGuac for Debian
 =====================
 
+Debian 13: FreeRDP from trixie-backports
+-----------------------------------------
+BetterGuac needs FreeRDP 3.32.2 or later (Debian 13 ships 3.15.0). Install it
+from Debian's official backports together with the package:
+
+    echo "deb http://deb.debian.org/debian trixie-backports main" | \
+        sudo tee /etc/apt/sources.list.d/trixie-backports.list
+    sudo apt update
+    sudo apt install ./betterguac_<version>_<arch>.deb libfreerdp3-3/trixie-backports \
+        libfreerdp-client3-3/trixie-backports libwinpr3-3/trixie-backports
+
+Ubuntu 26.04 already has FreeRDP 3.32.2.
+
 Sign in
 -------
 Open http://<this machine>:8080/betterguac/ (or just http://<this machine>:8080/) and sign in as the first
@@ -28,9 +41,13 @@ Where things are
 /usr/share/betterguac/                web application, extensions, schema, examples
 /usr/lib/betterguac/guacd/            guacd and its protocol plugins
 
-Services: betterguac-guacd, tomcat10, mariadb.
-Logs:     journalctl -u betterguac-guacd, journalctl -u tomcat10,
+Services: betterguac-guacd, betterguac-web (the web app on the Apache
+          Tomcat 10.1 release in /usr/share/betterguac/tomcat), mariadb.
+Logs:     journalctl -u betterguac-guacd, journalctl -u betterguac-web,
           /var/log/tomcat10/
+Tomcat:   settings in /etc/tomcat10 (server.xml: port 8080), base in
+          /var/lib/tomcat10. Your own JAVA_OPTS or CATALINA_OPTS go in
+          /etc/default/betterguac-web.
 Status:   sudo betterguac-admin status
 
 Adding an SSH key
@@ -48,5 +65,5 @@ sudo apt purge betterguac    also removes /etc/betterguac (keys included)
                              database is saved first in
                              /var/backups/betterguac-purge-<date>.sql.gz.
 
-Tomcat, MariaDB and the Java runtime stay installed; remove them with
+MariaDB, FreeRDP and the Java runtime stay installed; remove them with
 "sudo apt autoremove" if nothing else uses them.

@@ -55,7 +55,7 @@ Not yet tested: Debian 13 and Arch on real machines or VMs, containers only. Any
 | Privileges | root or sudo |
 | Network port | 8080/tcp (Tomcat) |
 
-The package depends on MariaDB and Tomcat 10 and pulls them in automatically.
+The package depends on MariaDB, a Java runtime and FreeRDP 3.32.2 or later, and pulls them in automatically. It runs the web application on the Apache Tomcat 10.1.62 release it ships, so it doesn't install the distribution's `tomcat10` package. Debian 13 takes FreeRDP from trixie-backports, see below.
 
 **RHEL, Rocky Linux, AlmaLinux, CentOS and Fedora:** there is no RPM package. Use the Docker image, see [Docker](#docker).
 
@@ -65,7 +65,9 @@ The package depends on MariaDB and Tomcat 10 and pulls them in automatically.
 
 ### Debian and Ubuntu
 
-Download the package for your architecture, then install it with `apt` so dependencies are resolved:
+Download the package for your architecture, then install it with `apt` so dependencies are resolved.
+
+**Ubuntu 26.04:**
 
 ```bash
 # amd64
@@ -74,6 +76,20 @@ sudo apt install ./betterguac_1.6.0+bg11_amd64.deb
 # arm64
 sudo apt install ./betterguac_1.6.0+bg11_arm64.deb
 ```
+
+**Debian 13:** BetterGuac needs FreeRDP 3.32.2 or later, which has the fixes for the three FreeRDP Critical issues and most of the FreeRDP Highs. Debian 13's own FreeRDP is 3.15.0, so turn on Debian's official backports and take FreeRDP from there, the same FreeRDP 3.33.1 the Docker image uses:
+
+```bash
+echo "deb http://deb.debian.org/debian trixie-backports main" | sudo tee /etc/apt/sources.list.d/trixie-backports.list
+sudo apt update
+# amd64 (use the _arm64.deb on arm64)
+sudo apt install ./betterguac_1.6.0+bg11_amd64.deb \
+  libfreerdp3-3/trixie-backports libfreerdp-client3-3/trixie-backports libwinpr3-3/trixie-backports
+```
+
+Only FreeRDP and the few libraries it needs come from backports; everything else stays on Debian 13. Without backports, `apt` stops with "Depends: libfreerdp3-3 (>= 3.32.2~)".
+
+**Already running bg11 from an earlier download:** the package keeps the version `1.6.0+bg11`, so add `--reinstall` to the same command (on Debian 13 with the backports part too). Your settings, keys and database stay as they are. The web app moves from the `tomcat10` service to `betterguac-web` and `tomcat10` is turned off; afterwards `sudo apt remove tomcat10 tomcat10-common libtomcat10-java` removes the distribution's Tomcat, which BetterGuac no longer uses.
 
 The `./` matters: without it, `apt` looks for a package in your repositories instead of the file.
 
@@ -142,7 +158,7 @@ When installation finishes, check that everything is running:
 sudo betterguac-admin status
 ```
 
-Three services make up BetterGuac: `betterguac-guacd`, `tomcat10` and `mariadb`. All three start at boot.
+Three services make up BetterGuac: `betterguac-guacd`, `betterguac-web` (the web application on the bundled Tomcat) and `mariadb`. All three start at boot. On Arch the web application runs on Arch's `tomcat10` service instead.
 
 ## First sign-in
 
@@ -485,7 +501,7 @@ BetterGuac redirects old `/guacamole/...` addresses and the bare server address 
 | Database changes: list / apply | `sudo betterguac-admin migrate --status` / `sudo betterguac-admin migrate` |
 | Rebuild the Tomcat 10 copy of the web application | `sudo betterguac-admin webapp` |
 | guacd logs | `journalctl -u betterguac-guacd` |
-| Web application logs | `journalctl -u tomcat10` and `/var/log/tomcat10/` |
+| Web application logs | `journalctl -u betterguac-web` and `/var/log/tomcat10/` (Arch: `journalctl -u tomcat10`) |
 
 **Where things live:**
 
@@ -511,7 +527,7 @@ sudo apt remove betterguac
 sudo apt purge betterguac
 ```
 
-Before a purge deletes the databases, a copy is saved to `/var/backups/betterguac-purge-<date>.sql.gz`. Tomcat, MariaDB and Java stay installed; remove them with `sudo apt autoremove` if nothing else needs them.
+Before a purge deletes the databases, a copy is saved to `/var/backups/betterguac-purge-<date>.sql.gz`. MariaDB, FreeRDP and Java stay installed; remove them with `sudo apt autoremove` if nothing else needs them.
 
 On Arch Linux, `sudo pacman -R betterguac` removes the program and keeps `/etc/betterguac`, `/var/lib/betterguac` and the databases. pacman has no purge; to remove those too, back up, then drop the `betterguac` and `betterguac_yamlsync` databases and their two users, and delete the two folders. The exact commands are in `/usr/share/doc/betterguac/README.Arch`.
 

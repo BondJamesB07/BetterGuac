@@ -57,10 +57,20 @@ override_dh_auto_install:
 	rmdir $(PKG)$(GUACD_PREFIX)/bin || true
 	sh debian/install-web.sh $(B) $(PKG)
 	sh debian/install-runtime.sh $(B) $(PKG)
+	# the .deb runs the bundled Tomcat as its own service, betterguac-web
+	# (debian/betterguac.betterguac-web.service), not the distribution's
+	# tomcat10: its drop-in (used by the Arch package) is not shipped here
+	rm -rf $(PKG)/usr/lib/systemd/system/tomcat10.service.d
 
 override_dh_installsystemd:
 	dh_installsystemd --name=betterguac-guacd
+	# betterguac-setup restarts it once the web application is ready
+	dh_installsystemd --name=betterguac-web --no-start
 	dh_installsystemd --name=betterguac --no-start
+	# the shared target names tomcat10 (Arch); the .deb's web service is betterguac-web
+	sed -i 's/tomcat10\.service/betterguac-web.service/g' $(PKG)/usr/lib/systemd/system/betterguac.target
+	grep -q '^Wants=.*betterguac-web.service' $(PKG)/usr/lib/systemd/system/betterguac.target
+	! grep -q tomcat10 $(PKG)/usr/lib/systemd/system/betterguac.target
 
 override_dh_shlibdeps:
 	dh_shlibdeps -l$(PKG)$(GUACD_PREFIX)/lib
@@ -68,6 +78,11 @@ override_dh_shlibdeps:
 	# as libjpeg62 on Ubuntu; accept either so one .deb installs on both.
 	sed -i -E 's/(libjpeg62-turbo \([^)]*\))/\1 | libjpeg62/' debian/betterguac.substvars
 	grep -q 'libjpeg62-turbo ([^)]*) | libjpeg62' debian/betterguac.substvars
+	# FreeRDP 3.32.2 or later is required in debian/control (Ubuntu 26.04;
+	# Debian 13 from trixie-backports): the fixes for CVE-2026-121392,
+	# -121952 and -121953 and the other FreeRDP issues fixed since 3.15.
+	# guacd is built against the distribution's freerdp3-dev; the library
+	# ABI (soname 3) is the same.
 
 override_dh_makeshlibs:
 	dh_makeshlibs --no-scripts -Xfreerdp3 -X$(GUACD_PREFIX)

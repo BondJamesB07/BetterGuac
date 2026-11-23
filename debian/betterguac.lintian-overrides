@@ -5,3 +5,5 @@ betterguac: embedded-javascript-library please use libjs-lodash [usr/share/bette
 betterguac: codeless-jar [usr/share/betterguac/webapp/WEB-INF/lib/listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar]
 # guacd also starts with betterguac.target (start/stop everything at once)
 betterguac: systemd-service-file-refers-to-unusual-wantedby-target betterguac.target [usr/lib/systemd/system/betterguac-guacd.service]
+# the web service (the bundled Tomcat) also starts with betterguac.target
+betterguac: systemd-service-file-refers-to-unusual-wantedby-target betterguac.target [usr/lib/systemd/system/betterguac-web.service]

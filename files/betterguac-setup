@@ -18,6 +18,15 @@ SYNC_DB=betterguac_yamlsync
 SYNC_USER=betterguac_sync
 TOMCAT_GROUP=tomcat
 CTXDIR=/etc/tomcat10/Catalina/localhost
+# the service that runs the web application: betterguac-web on Debian/Ubuntu
+# (the Apache Tomcat release the package ships, no tomcat10 package needed),
+# else the distribution's tomcat10 (Arch)
+if [ -e /usr/lib/systemd/system/betterguac-web.service ]; then
+    TOMCAT_SERVICE=betterguac-web
+else
+    TOMCAT_SERVICE=tomcat10
+fi
+TOMCAT_HOME=/usr/share/betterguac/tomcat
 # the javax-to-jakarta converter; empty: the Apache Tomcat migration tool
 # shipped in the bundled Tomcat's lib folder (Debian/Ubuntu package and
 # container image). The Arch package sets its own wrapper here.
@@ -281,6 +290,47 @@ PYEOF
     done
 }
 
+# Debian/Ubuntu: the web application runs on the Apache Tomcat release the
+# package ships, so the distribution's tomcat10 package (and its older
+# libtomcat10-java) isn't needed. Create the tomcat account and a Tomcat base
+# laid out like Debian's (/var/lib/tomcat10, conf -> /etc/tomcat10), the same
+# layout the container image uses, from Tomcat's stock configuration with the
+# shutdown port off. Anything that already exists (an earlier install with
+# the tomcat10 package, or your own changes) is kept as it is.
+setup_tomcat_base() {
+    [ "$TOMCAT_SERVICE" = betterguac-web ] || return 0
+    if ! getent group "$TOMCAT_GROUP" >/dev/null || ! getent passwd tomcat >/dev/null; then
+        say "creating the tomcat system account"
+        getent group "$TOMCAT_GROUP" >/dev/null || groupadd --system "$TOMCAT_GROUP"
+        getent passwd tomcat >/dev/null || useradd --system --gid "$TOMCAT_GROUP" \
+            --home-dir /var/lib/tomcat --no-create-home --shell /usr/sbin/nologin \
+            --comment "Apache Tomcat" tomcat
+    fi
+    local f fresh=no
+    [ -e /etc/tomcat10/server.xml ] || fresh=yes
+    install -d -m 0755 /etc/tomcat10
+    [ "$fresh" = yes ] && chgrp "$TOMCAT_GROUP" /etc/tomcat10
+    for f in "$TOMCAT_HOME"/conf-dist/*; do
+        [ -e "/etc/tomcat10/$(basename "$f")" ] && continue
+        install -m 0640 -o root -g "$TOMCAT_GROUP" "$f" "/etc/tomcat10/$(basename "$f")"
+    done
+    if [ "$fresh" = yes ]; then
+        sed -i 's#<Server port="8005" shutdown="SHUTDOWN">#<Server port="-1" shutdown="SHUTDOWN">#' /etc/tomcat10/server.xml
+        grep -q '<Server port="-1"' /etc/tomcat10/server.xml || say "warning: the Tomcat shutdown port was not turned off in /etc/tomcat10/server.xml"
+    fi
+    [ -d /etc/tomcat10/Catalina ] || install -d -m 0775 -o root -g "$TOMCAT_GROUP" /etc/tomcat10/Catalina
+    [ -d /etc/tomcat10/Catalina/localhost ] || install -d -m 0775 -o root -g "$TOMCAT_GROUP" /etc/tomcat10/Catalina/localhost
+    [ -d /var/lib/tomcat10 ] || install -d -m 0755 /var/lib/tomcat10
+    [ -d /var/lib/tomcat10/webapps ] || install -d -m 0775 -o tomcat -g "$TOMCAT_GROUP" /var/lib/tomcat10/webapps
+    [ -d /var/lib/tomcat10/lib ] || install -d -m 0755 -o tomcat -g "$TOMCAT_GROUP" /var/lib/tomcat10/lib
+    [ -d /var/lib/tomcat ] || install -d -m 0755 -o tomcat -g "$TOMCAT_GROUP" /var/lib/tomcat
+    [ -d /var/cache/tomcat10 ] || install -d -m 0750 -o tomcat -g "$TOMCAT_GROUP" /var/cache/tomcat10
+    [ -d /var/log/tomcat10 ] || install -d -m 2750 -o tomcat -g adm /var/log/tomcat10
+    [ -e /var/lib/tomcat10/conf ] || ln -s /etc/tomcat10 /var/lib/tomcat10/conf
+    [ -e /var/lib/tomcat10/logs ] || ln -s ../../log/tomcat10 /var/lib/tomcat10/logs
+    [ -e /var/lib/tomcat10/work ] || ln -s ../../cache/tomcat10 /var/lib/tomcat10/work
+}
+
 setup_tomcat() {
     install -d -m 0755 "$(dirname "$CONTEXT")"
     install -m 0644 "$SHARE/templates/context.xml.in" "$CONTEXT"
@@ -307,8 +357,16 @@ PYEOF
     fi
     if have_systemd; then
         systemctl daemon-reload || true
-        systemctl enable --quiet tomcat10.service mariadb.service betterguac.target 2>/dev/null || true
-        systemctl restart tomcat10.service || say "warning: the web app didn't restart; see journalctl -u tomcat10"
+        if [ "$TOMCAT_SERVICE" != tomcat10 ] && systemctl is-enabled --quiet tomcat10.service 2>/dev/null; then
+            # an install from before: the distribution's tomcat10 ran the web
+            # app on the same base and port. betterguac-web replaces it
+            # (Conflicts=tomcat10.service), so keep it from starting at boot.
+            say "the web app now runs as betterguac-web; turning off the distribution's tomcat10 service"
+            systemctl disable --quiet tomcat10.service 2>/dev/null || true
+            say "the tomcat10 package is no longer needed: sudo apt remove tomcat10 tomcat10-common libtomcat10-java"
+        fi
+        systemctl enable --quiet "$TOMCAT_SERVICE.service" mariadb.service betterguac.target 2>/dev/null || true
+        systemctl restart "$TOMCAT_SERVICE.service" || say "warning: the web app didn't restart; see journalctl -u $TOMCAT_SERVICE"
         systemctl start betterguac.target 2>/dev/null || true
     fi
 }
@@ -397,6 +455,7 @@ cmd_migrate() {
 
 cmd_configure() {
     [ "$(id -u)" = 0 ] || die "run this as root"
+    setup_tomcat_base
     getent group "$TOMCAT_GROUP" >/dev/null || die "the $TOMCAT_GROUP group is missing (is tomcat10 installed?)"
     setup_dirs
     wait_for_db || die "MariaDB isn't answering. Start it (systemctl start mariadb), then run: sudo dpkg --configure -a"
@@ -413,7 +472,7 @@ cmd_configure() {
 
 cmd_status() {
     local s
-    for s in mariadb betterguac-guacd tomcat10; do
+    for s in mariadb betterguac-guacd "$TOMCAT_SERVICE"; do
         printf '%-18s %s\n' "$s" "$(systemctl is-active $s 2>/dev/null || true)"
     done
     echo "sign-in address:   $(url)"

@@ -22,6 +22,17 @@ betterguac (1.6.0+bg11) trixie; urgency=high
   * Docker image: no tomcat10, tomcat-jakartaee-migration or libmariadb-java
     packages; FreeRDP 3.33.1 from trixie-backports at run time; fixed user
     IDs for tomcat (997) and mysql (100:101) so bg10 volumes keep working.
+  * Security (.deb, refreshed bg11 build): the web application runs as its
+    own service, betterguac-web, on the bundled Tomcat, and the package no
+    longer depends on tomcat10, so the distribution's libtomcat10-java
+    (Debian 10.1.60) is not installed. The Tomcat base keeps the layout the
+    container image uses (/var/lib/tomcat10, conf -> /etc/tomcat10); it is
+    created when missing and left as it is when it exists. Upgrades turn off
+    the old tomcat10 service (betterguac-web has Conflicts=tomcat10.service).
+  * Security (.deb, refreshed bg11 build): depends on FreeRDP 3.32.2 or later
+    (libfreerdp3-3, libfreerdp-client3-3, libwinpr3-3), with the fixes for
+    CVE-2026-121392, CVE-2026-121952 and CVE-2026-121953. Ubuntu 26.04 has
+    3.32.2; Debian 13 takes 3.33.1 from trixie-backports (README.Debian).
 
  -- Robert Debs <robert@robertdebs.com>  Sun, 22 Nov 2026 17:00:00 -0600
 
