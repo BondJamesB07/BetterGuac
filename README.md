@@ -4,11 +4,13 @@ BetterGuac is a clientless remote access gateway for SSH, RDP, VNC and Telnet, b
 
 Your users open a browser, sign in with their email address and an authenticator code, and see only the servers you assigned to them. No VPN client, no browser plugin, no Java applet.
 
-> This README describes release 1.6.0+bg10.
+> This README describes release 1.6.0+bg11.
 
 ## Contents
 
 - What you get
+- Security status
+- Tested / not yet tested
 - Requirements
 - Install
 - First sign-in
@@ -32,6 +34,17 @@ Your users open a browser, sign in with their email address and an authenticator
 - **RDP fix included.** guacd ships with a FreeRDP 3 post-connect graphics fix.
 - **Activity log.** Administrators see who signed in, failed sign-ins, two-factor events, server sessions with their length, admin changes and YAML sync applies on the Activity page, with filters, search and CSV export. Activity is kept for 365 days by default.
 - **Automatic database updates.** Upgrades apply BetterGuac's numbered database changes in order, after a backup of the database.
+- Security refresh (new in bg11). Tomcat 10.1.62 bundled in the Debian/Ubuntu package and Docker image, clustering jars removed, all 9 Tomcat Critical findings from bg10 are gone from the Docker image. Newer libraries: Jackson 2.21.8, Guava 33.8.0, Logback 1.5.38, MyBatis 3.6.0. MariaDB Connector/J 2.7.15 bundled in the .deb and Arch packages; the .deb no longer depends on libmariadb-java or tomcat-jakartaee-migration.
+
+## Security status
+
+bg11 is a security update. It reduces Scout findings but doesn't clear them. bg11 changes no features or database schema; no migration runs on upgrade from bg10. In the Docker image, Docker Scout reports 3 Critical findings, all in freerdp3 3.33.1: CVE-2026-121392, CVE-2026-121952, and CVE-2026-121953. That's down from 12 Critical in bg10, and total findings went from 414 to 318 (amd64) and 317 (arm64). The upstream fix landed in FreeRDP 3.32.2 and is included in 3.33.1, while Debian's trixie tracker has not marked the package fixed, so Scout still counts them. One fixable High is still open, CVE-2026-23949 in jaraco-context 6.0.1, fixed in 6.1.0. The top-scoring Highs are FreeRDP. Arch keeps Tomcat 10.1.61, which still lacks four fixes from 10.1.62.
+
+## Tested / not yet tested
+
+Tested in bg11: .deb fresh installs and bg10 upgrades in Debian 13 and Ubuntu 26.04 containers, amd64 and arm64, sign-in, MFA, YAML sync, SSH, RDP and VNC, Activity, database migration check (no schema change). Docker fresh start 18 of 18, upgrade on bg10 volumes 29 of 29, amd64 and arm64. Arch install suite 87 of 87 and MariaDB checks 7 of 7, x86_64 and aarch64, upgrades from bg10-1 and bg10-3. Two real Ubuntu 26.04 servers, upgraded from bg10, Tomcat 10.1.62, data unchanged.
+
+Not yet tested: Debian 13 and Arch on real machines or VMs, containers only. Any arm64/aarch64 install outside a container. An upgrade straight from bg9 or earlier to bg11, bg10 to bg11 only was tested.
 
 ## Requirements
 
@@ -56,10 +69,10 @@ Download the package for your architecture, then install it with `apt` so depend
 
 ```bash
 # amd64
-sudo apt install ./betterguac_1.6.0+bg10_amd64.deb
+sudo apt install ./betterguac_1.6.0+bg11_amd64.deb
 
 # arm64
-sudo apt install ./betterguac_1.6.0+bg10_arm64.deb
+sudo apt install ./betterguac_1.6.0+bg11_arm64.deb
 ```
 
 The `./` matters: without it, `apt` looks for a package in your repositories instead of the file.
@@ -73,7 +86,7 @@ These questions appear only when you install from an interactive terminal. When 
 
 ```bash
 echo "betterguac betterguac/admin-email string admin@example.com" | sudo debconf-set-selections
-sudo apt install -y ./betterguac_1.6.0+bg10_amd64.deb
+sudo apt install -y ./betterguac_1.6.0+bg11_amd64.deb
 ```
 
 ### Arch Linux
@@ -82,13 +95,15 @@ Download the package for your architecture, then install it with `pacman -U`, wh
 
 ```bash
 # x86_64
-sudo pacman -U ./betterguac-1.6.0+bg10-3-x86_64.pkg.tar.zst
+sudo pacman -U ./betterguac-1.6.0+bg11-1-x86_64.pkg.tar.zst
 
 # aarch64 (Arch Linux ARM)
-sudo pacman -U ./betterguac-1.6.0+bg10-3-aarch64.pkg.tar.zst
+sudo pacman -U ./betterguac-1.6.0+bg11-1-aarch64.pkg.tar.zst
 ```
 
-Use bg10-3. The earlier bg10-1 Arch packages are withdrawn: where they set up MariaDB themselves, MariaDB kept Arch's defaults, with anonymous accounts and listening on the LAN. Upgrading to bg10-3 closes that MariaDB automatically when the bg10-1 package set it up (pacman's log shows it), and leaves a MariaDB set up any other way alone; your BetterGuac data is not touched. If you can't upgrade, the three manual commands are in the [release notes](https://github.com/BondJamesB07/BetterGuac/releases/tag/v1.6.0-bg10) and in `README.Arch`. The aarch64 package has been tested in Arch Linux ARM containers on arm64 hardware, not yet on a full Arch Linux ARM install.
+Use bg11-1. The earlier bg10-1 Arch packages are withdrawn: where they set up MariaDB themselves, MariaDB kept Arch's defaults, with anonymous accounts and listening on the LAN. Upgrading to bg10-3 or later, including bg11-1, closes that MariaDB automatically when the bg10-1 package set it up, and leaves a MariaDB set up any other way alone; your BetterGuac data is not touched. The MariaDB auto-close from bg10-3 is unchanged in bg11-1. The aarch64 package has been tested in Arch Linux ARM containers, not yet on a full Arch Linux ARM install.
+
+Arch keeps its own tomcat10 package, 10.1.61 at build time, which still lacks four fixes from Tomcat 10.1.62 until Arch updates it.
 
 The Arch package asks no questions. It initialises MariaDB, local only and with no anonymous accounts, if the machine has no database yet, creates the first administrator `admin` with a generated password, and enables and starts `mariadb`, `tomcat10` and `betterguac.target`. To choose the first administrator yourself, set `BETTERGUAC_ADMIN_EMAIL` (and optionally `BETTERGUAC_ADMIN_PASSWORD`) for the install: `sudo BETTERGUAC_ADMIN_EMAIL=admin@example.com pacman -U ./betterguac-...`.
 
@@ -104,7 +119,11 @@ docker compose up -d --wait
 docker compose exec betterguac cat /etc/betterguac/initial-admin.txt
 ```
 
+Current Docker tags: 1.6.0-bg11 and latest, plus 1.6.0-bg11-amd64 and 1.6.0-bg11-arm64.
+
 Then browse to `http://127.0.0.1:8080/betterguac/` on the Docker host. Port 8080 is published on loopback only; put a reverse proxy or a private tunnel in front for access from other machines.
+
+Check downloads against SHA256SUMS on the [bg11 release](https://github.com/BondJamesB07/BetterGuac/releases/tag/v1.6.0-bg11) - `sha256sum -c SHA256SUMS --ignore-missing`
 
 ### Check the install
 
@@ -522,6 +541,8 @@ The `instance:` line does not match this machine. Use the value the installer wr
 **`can't read /etc/betterguac/sync.env (run it with sudo)`**
 Run the command with `sudo`.
 
+incompatible version of the Apache Tomcat Native library SEVERE at start on Ubuntu. Ubuntu servers with libtcnative-1 2.0.14 installed log one harmless SEVERE line at start. Tomcat then runs without the native library, as before.
+
 ## Building the package from source
 
 The repository holds everything needed to build the `.deb` except three Apache Guacamole 1.6.0 release archives. They are large, unchanged upstream files, so `.gitignore` keeps them out of the repository. The build stops if any of them is missing from the `upstream/` folder.
@@ -567,7 +588,7 @@ These steps were tested on Debian 13. The package is built for the architecture 
    dpkg-buildpackage -b -us -uc
    ```
 
-   The package is written to the folder above the repository, for example `../betterguac_1.6.0+bg10_amd64.deb`. Install it as described in [Install](#install).
+   The package is written to the folder above the repository, for example `../betterguac_1.6.0+bg11_amd64.deb`. Install it as described in [Install](#install).
 
 ### Arch Linux package
 
@@ -583,5 +604,7 @@ makepkg -si
 BetterGuac is based on [Apache Guacamole](https://guacamole.apache.org/), used under the Apache License 2.0. The required license and notice files are included in the package, in `/usr/share/doc/betterguac/`. The MySQL authentication and two-factor extensions contain third-party libraries; their upstream LICENSE, NOTICE and per-library license files are kept in `/usr/share/doc/betterguac/guacamole-auth-jdbc/` and `/usr/share/doc/betterguac/guacamole-auth-totp/`. Apache Guacamole and Guacamole are trademarks of the Apache Software Foundation; BetterGuac is an independent project and is not endorsed by the Apache Software Foundation.
 
 BetterGuac's changes to Apache Guacamole files are listed in `/usr/share/betterguac/legal/NOTICE`, and each changed file says so. The Apache Guacamole web application and its bundled third-party libraries (some under the Eclipse Public License 2.0 and CDDL 1.1) are shipped unmodified; they are converted from `javax.*` to `jakarta.*` for Tomcat 10 on the machine where BetterGuac is installed, with the Apache Tomcat migration tool (Debian's package of it in the `.deb`; the upstream release, shipped unmodified, in the Arch package). The Arch package also ships the stock MariaDB Connector/J jar (LGPL-2.1), because Arch does not package it. Where to get the source of BetterGuac, Apache Guacamole and those libraries is in `/usr/share/betterguac/legal/SOURCES`.
+
+bg11 bundles the unmodified Apache Tomcat 10.1.62 release under /usr/share/betterguac/tomcat, minus the two clustering jars catalina-ha and catalina-tribes that BetterGuac does not use, in the Debian/Ubuntu package and Docker image. Arch uses its distribution Tomcat.
 
 The Docker image is built on Debian and contains Debian packages under their own licenses, some under the GNU GPL (for example MariaDB and libvncclient). The image lists every package and version in `/usr/share/betterguac/legal/sbom/` (`packages.tsv` and an SPDX 2.3 file); their source is in the Debian archive at https://deb.debian.org/debian/pool/main/ and https://snapshot.debian.org/.
