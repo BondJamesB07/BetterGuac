@@ -77,9 +77,10 @@ RUN set -eux; \
     printf 'Types: deb\nURIs: http://deb.debian.org/debian\nSuites: trixie-backports\nComponents: main\nSigned-By: /usr/share/keyrings/debian-archive-keyring.gpg\n' > /etc/apt/sources.list.d/backports.sources; \
     apt-get update; \
     apt-get upgrade -y; \
-    # curl and iproute2 are not installed: nothing in the image uses them (the
-    # healthcheck talks HTTP with bash's /dev/tcp), and leaving them out drops
-    # libcurl, libldap and libelf from the image's attack surface.
+    # curl and iproute2 are not requested: nothing in the image uses them (the
+    # healthcheck talks HTTP with bash's /dev/tcp). Leaving curl out drops
+    # libcurl and its libldap from the image. iproute2 still arrives as a
+    # dependency of the MariaDB/Galera packages.
     apt-get install -y --no-install-recommends \
         ca-certificates supervisor tini procps \
         mariadb-client mariadb-server \
