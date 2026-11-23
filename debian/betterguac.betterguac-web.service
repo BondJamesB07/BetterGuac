@@ -7,7 +7,6 @@ PartOf=betterguac.target
 # (installs from before kept the tomcat10 package): only one runs
 Conflicts=tomcat10.service
 RequiresMountsFor=/var/log/tomcat10 /var/lib/tomcat10
-ConditionPathExists=/etc/tomcat10/server.xml
 
 [Service]
 # BetterGuac ships Apache Tomcat 10.1.62 (newer than the distributions'
@@ -21,8 +20,12 @@ Environment=JAVA_OPTS=-Djava.awt.headless=true
 # JAVA_HOME, JAVA_OPTS or CATALINA_OPTS of your own, if you set any
 EnvironmentFile=-/etc/default/tomcat10
 EnvironmentFile=-/etc/default/betterguac-web
-WorkingDirectory=/var/lib/tomcat10
+WorkingDirectory=-/var/lib/tomcat10
 Type=simple
+# as root, before the sandbox: creates the Tomcat base when it is missing
+# (removing the old tomcat10 package deletes its /var/lib/tomcat10); an
+# existing base and settings are left as they are
+ExecStartPre=+/usr/lib/betterguac/betterguac-setup tomcat-base
 ExecStart=/usr/share/betterguac/tomcat/bin/catalina.sh run
 SuccessExitStatus=143
 Restart=on-failure
@@ -37,9 +40,9 @@ NoNewPrivileges=true
 CacheDirectory=tomcat10
 CacheDirectoryMode=750
 ProtectSystem=strict
-ReadWritePaths=/etc/tomcat10/Catalina/
-ReadWritePaths=/var/lib/tomcat10/webapps/
-ReadWritePaths=/var/log/tomcat10/
+ReadWritePaths=-/etc/tomcat10/Catalina/
+ReadWritePaths=-/var/lib/tomcat10/webapps/
+ReadWritePaths=-/var/log/tomcat10/
 
 [Install]
 WantedBy=multi-user.target betterguac.target

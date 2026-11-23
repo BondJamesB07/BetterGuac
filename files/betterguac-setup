@@ -514,5 +514,8 @@ case "${1:-}" in
     reset-password) shift; cmd_reset_password "$@" ;;
     migrate) shift; cmd_migrate "$@" ;;
     webapp) [ "$(id -u)" = 0 ] || die "run this as root"; prepare_webapp ;;
+    # betterguac-web runs this before it starts: puts back the Tomcat base if
+    # something removed it (apt remove tomcat10 deletes its /var/lib/tomcat10)
+    tomcat-base) [ "$(id -u)" = 0 ] || die "run this as root"; setup_tomcat_base ;;
     *) echo "usage: betterguac-admin {status|reset-password <username>|migrate [--status]|setup|webapp}" >&2; exit 2 ;;
 esac
