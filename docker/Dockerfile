@@ -77,8 +77,11 @@ RUN set -eux; \
     printf 'Types: deb\nURIs: http://deb.debian.org/debian\nSuites: trixie-backports\nComponents: main\nSigned-By: /usr/share/keyrings/debian-archive-keyring.gpg\n' > /etc/apt/sources.list.d/backports.sources; \
     apt-get update; \
     apt-get upgrade -y; \
+    # curl and iproute2 are not installed: nothing in the image uses them (the
+    # healthcheck talks HTTP with bash's /dev/tcp), and leaving them out drops
+    # libcurl, libldap and libelf from the image's attack surface.
     apt-get install -y --no-install-recommends \
-        ca-certificates supervisor tini iproute2 procps curl \
+        ca-certificates supervisor tini procps \
         mariadb-client mariadb-server \
         libcairo2 libglib2.0-0t64 \
         libjpeg62-turbo libpango-1.0-0 libpangocairo-1.0-0 libpng16-16t64 \

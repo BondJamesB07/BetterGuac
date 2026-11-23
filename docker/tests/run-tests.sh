@@ -41,7 +41,13 @@ wait_health() {
 
 get_pid() { dc exec -T betterguac sh -c "supervisorctl pid $1" 2>/dev/null | tr -d '[:space:]'; }
 get_status() { dc exec -T betterguac supervisorctl status 2>/dev/null; }
-ssltn() { dc exec -T betterguac ss -ltn 2>/dev/null; }
+# listening TCP ports inside the container, one "LISTEN *:<port> " line each
+# (read from /proc/net/tcp*, because the image has no iproute2/ss)
+ssltn() { dc exec -T betterguac python3 -c '
+for f in ("/proc/net/tcp", "/proc/net/tcp6"):
+    for l in open(f).readlines()[1:]:
+        p = l.split()
+        if p[3] == "0A": print("LISTEN *:%d " % int(p[1].split(":")[1], 16))' 2>/dev/null; }
 
 fresh_volumes() {
     dc down -v >/dev/null 2>&1 || true

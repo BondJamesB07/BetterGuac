@@ -5,7 +5,11 @@
 set -uo pipefail
 fail() { echo "unhealthy: $*"; exit 1; }
 
-code=$(curl -s -o /dev/null -m 5 -w '%{http_code}' http://127.0.0.1:8080/betterguac/ || true)
+# plain HTTP/1.0 request through bash's /dev/tcp (the image has no curl);
+# only the status code of the first response line is used, redirects are not followed
+code=$(timeout 5 bash -c 'exec 3<>/dev/tcp/127.0.0.1/8080 || exit 1
+printf "GET /betterguac/ HTTP/1.0\r\nHost: 127.0.0.1:8080\r\nConnection: close\r\n\r\n" >&3
+read -r _ c _ <&3 && printf "%s" "$c"' 2>/dev/null || true)
 [ "$code" = 200 ] || fail "web app /betterguac/ returned ${code:-no response}"
 
 if [ ! -S /run/mysqld/mysqld.sock ]; then
