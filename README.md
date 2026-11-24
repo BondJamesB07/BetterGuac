@@ -4,7 +4,7 @@ BetterGuac is a clientless remote access gateway for SSH, RDP, VNC and Telnet, b
 
 Your users open a browser, sign in with their email address and an authenticator code, and see only the servers you assigned to them. No VPN client, no browser plugin, no Java applet.
 
-> This README describes release 1.6.0+bg11. It is a full release as of November 23, 2026; it was a pre-release until then. Full release means it passed the tests listed under "Tested / not yet tested", not that every platform has been tested.
+> This README describes release 1.6.0+bg11. It is a full release as of November 23, 2026; it was a pre-release until then.
 
 ## Contents
 
