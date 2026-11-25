@@ -127,7 +127,7 @@ sudo pacman -U ./betterguac-1.6.0+bg11-1-x86_64.pkg.tar.zst
 sudo pacman -U ./betterguac-1.6.0+bg11-1-aarch64.pkg.tar.zst
 ```
 
-Use bg11-1. The earlier bg10-1 Arch packages are withdrawn: where they set up MariaDB themselves, MariaDB kept Arch's defaults, with anonymous accounts and listening on the LAN. Upgrading to bg10-3 or later, including bg11-1, closes that MariaDB automatically when the bg10-1 package set it up, and leaves a MariaDB set up any other way alone; your BetterGuac data is not touched. The MariaDB auto-close from bg10-3 is unchanged in bg11-1. The aarch64 package has been tested in Arch Linux ARM containers, not yet on a full Arch Linux ARM install.
+Use bg11-1. The earlier bg10-1 Arch packages are withdrawn: where they set up MariaDB themselves, MariaDB kept Arch's defaults, with anonymous accounts and listening on the LAN. Upgrading to bg10-3 or later, including bg11-1, closes that MariaDB automatically when the bg10-1 package set it up, and leaves a MariaDB set up any other way alone; your BetterGuac data is not touched. The MariaDB auto-close from bg10-3 is unchanged in bg11-1. The aarch64 package has been tested in Arch Linux ARM containers and in one Arch Linux ARM virtual machine emulated by QEMU, where it passed the install suite 87 of 87 and one other check (stopping the services while Tomcat was still starting) did not pass. It has not been tested on real arm64 hardware.
 
 Arch keeps its own tomcat10 package, 10.1.61 at build time, which still lacks four fixes from Tomcat 10.1.62 until Arch updates it.
 
