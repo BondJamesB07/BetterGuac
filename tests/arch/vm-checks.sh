@@ -30,8 +30,14 @@ kill -9 "$PID"; sleep 5
 N=$(systemctl show -p MainPID --value betterguac-guacd)
 { [ "$N" != 0 ] && [ "$N" != "$PID" ] && systemctl is-active --quiet betterguac-guacd; } && pass "guacd killed with SIGKILL is restarted by systemd (Restart=on-failure)" || fail "guacd after kill: pid=$N $(systemctl is-active betterguac-guacd)"
 ss -ltn | grep -q '127.0.0.1:4822' && pass "guacd listening again" || fail "guacd not listening after restart"
-systemctl stop betterguac.target; sleep 3
-{ ! systemctl is-active --quiet betterguac-guacd && ! systemctl is-active --quiet tomcat10 && systemctl is-active --quiet mariadb; } && pass "stopping betterguac.target stops guacd and Tomcat (PartOf) and leaves MariaDB running" || fail "after stop: guacd=$(systemctl is-active betterguac-guacd) tomcat=$(systemctl is-active tomcat10) mariadb=$(systemctl is-active mariadb)"
+systemctl stop betterguac.target
+# systemctl returns when the target's own stop job is done. The target is
+# ordered After= guacd and Tomcat, so on stop it goes first and they stop after
+# it, Tomcat and then guacd (the Tomcat drop-in is After= guacd). Wait for those
+# stop jobs, up to 120 s, instead of a fixed sleep: under QEMU emulation Tomcat
+# alone takes 6 to 8 s to stop.
+W=0; while systemctl list-jobs --no-legend | grep -qE '(betterguac-guacd|tomcat10)\.service'; do [ $W -ge 120 ] && break; sleep 1; W=$((W+1)); done
+{ ! systemctl is-active --quiet betterguac-guacd && ! systemctl is-active --quiet tomcat10 && systemctl is-active --quiet mariadb; } && pass "stopping betterguac.target stops guacd and Tomcat (PartOf) and leaves MariaDB running (${W}s after the command returned)" || fail "after stop (waited ${W}s): guacd=$(systemctl is-active betterguac-guacd) tomcat=$(systemctl is-active tomcat10) mariadb=$(systemctl is-active mariadb)"
 systemctl start betterguac.target
 wait_web && systemctl is-active --quiet betterguac-guacd && pass "starting betterguac.target brings guacd and the web app back" || fail "start target"
 systemctl restart betterguac.target; wait_web && [ "$(auth_state "$U" "$P")" = OK ] && pass "restart betterguac.target: web app back, sign-in works" || fail "restart target"
